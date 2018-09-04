@@ -289,81 +289,81 @@ IColor IGraphicsCairo::GetPoint(int x, int y)
 bool IGraphicsCairo::DrawText(const IText& text, const char* str, IRECT& bounds, const IBlend* pBlend, bool measure)
 {
 #if defined IGRAPHICS_FREETYPE
-//  FT_Face ft_face;
-//
-//  FT_New_Face(mFTLibrary, "/Users/oli/Applications/IGraphicsTest.app/Contents/Resources/ProFontWindows.ttf", 0, &ft_face);
-//
-//  FT_Set_Char_Size(ft_face, FONT_SIZE * 64, FONT_SIZE * 64, 0, 0 );
-//
-//  /* Create hb-ft font. */
-//  hb_font_t *hb_font;
-//  hb_font = hb_ft_font_create (ft_face, NULL);
-//
-//  /* Create hb-buffer and populate. */
-//  hb_buffer_t *hb_buffer;
-//  hb_buffer = hb_buffer_create ();
-//  hb_buffer_add_utf8 (hb_buffer, str, -1, 0, -1);
-//  hb_buffer_guess_segment_properties (hb_buffer);
-//
-//  /* Shape it! */
-//  hb_shape (hb_font, hb_buffer, NULL, 0);
-//
-//  /* Get glyph information and positions out of the buffer. */
-//  unsigned int len = hb_buffer_get_length (hb_buffer);
-//  hb_glyph_info_t *info = hb_buffer_get_glyph_infos (hb_buffer, NULL);
-//  hb_glyph_position_t *pos = hb_buffer_get_glyph_positions (hb_buffer, NULL);
-//
-//  /* Draw, using cairo. */
-//  double width = 2 * MARGIN;
-//  double height = 2 * MARGIN;
-//  for (unsigned int i = 0; i < len; i++)
-//  {
-//    width  += pos[i].x_advance / 64.;
-//    height -= pos[i].y_advance / 64.;
-//  }
-//  if (HB_DIRECTION_IS_HORIZONTAL (hb_buffer_get_direction(hb_buffer)))
-//    height += FONT_SIZE;
-//  else
-//    width  += FONT_SIZE;
-//
-//  cairo_set_source_rgba (mContext, 1., 1., 1., 1.);
-//  cairo_paint (mContext);
-//  cairo_set_source_rgba (mContext, 0., 0., 0., 1.);
-//  cairo_translate (mContext, MARGIN, MARGIN);
-//
-//  /* Set up cairo font face. */
-//  cairo_font_face_t *cairo_face;
-//  cairo_face = cairo_ft_font_face_create_for_ft_face (ft_face, 0);
-//  cairo_set_font_face (mContext, cairo_face);
-//  cairo_set_font_size (mContext, FONT_SIZE);
-//
-//  /* Set up baseline. */
-//  if (HB_DIRECTION_IS_HORIZONTAL (hb_buffer_get_direction(hb_buffer)))
-//  {
-//    cairo_font_extents_t font_extents;
-//    cairo_font_extents (mContext, &font_extents);
-//    double baseline = (FONT_SIZE - font_extents.height) * .5 + font_extents.ascent;
-//    cairo_translate (mContext, 0, baseline);
-//  }
-//  else
-//  {
-//    cairo_translate (mContext, FONT_SIZE * .5, 0);
-//  }
-//
-//  cairo_glyph_t *cairo_glyphs = cairo_glyph_allocate (len);
-//  double current_x = 0;
-//  double current_y = 0;
-//
-//  for (unsigned int i = 0; i < len; i++)
-//  {
-//    cairo_glyphs[i].index = info[i].codepoint;
-//    cairo_glyphs[i].x = current_x + pos[i].x_offset / 64.;
-//    cairo_glyphs[i].y = -(current_y + pos[i].y_offset / 64.);
-//    current_x += pos[i].x_advance / 64.;
-//    current_y += pos[i].y_advance / 64.;
-//  }
-//  cairo_show_glyphs (mContext, cairo_glyphs, len);
-//  cairo_glyph_free (cairo_glyphs);
+  FT_Face ft_face;
+
+  FT_New_Face(mFTLibrary, "/Users/oli/Applications/IGraphicsTest.app/Contents/Resources/ProFontWindows.ttf", 0, &ft_face);
+
+  FT_Set_Char_Size(ft_face, FONT_SIZE * 64, FONT_SIZE * 64, 0, 0 );
+
+  /* Create hb-ft font. */
+  hb_font_t *hb_font;
+  hb_font = hb_ft_font_create (ft_face, NULL);
+
+  /* Create hb-buffer and populate. */
+  hb_buffer_t *hb_buffer;
+  hb_buffer = hb_buffer_create ();
+  hb_buffer_add_utf8 (hb_buffer, str, -1, 0, -1);
+  hb_buffer_guess_segment_properties (hb_buffer);
+
+  /* Shape it! */
+  hb_shape (hb_font, hb_buffer, NULL, 0);
+
+  /* Get glyph information and positions out of the buffer. */
+  unsigned int len = hb_buffer_get_length (hb_buffer);
+  hb_glyph_info_t *info = hb_buffer_get_glyph_infos (hb_buffer, NULL);
+  hb_glyph_position_t *pos = hb_buffer_get_glyph_positions (hb_buffer, NULL);
+
+  /* Draw, using cairo. */
+  double width = 2 * MARGIN;
+  double height = 2 * MARGIN;
+  for (unsigned int i = 0; i < len; i++)
+  {
+    width  += pos[i].x_advance / 64.;
+    height -= pos[i].y_advance / 64.;
+  }
+  if (HB_DIRECTION_IS_HORIZONTAL (hb_buffer_get_direction(hb_buffer)))
+    height += FONT_SIZE;
+  else
+    width  += FONT_SIZE;
+
+  cairo_set_source_rgba (mContext, 1., 1., 1., 1.);
+  cairo_paint (mContext);
+  cairo_set_source_rgba (mContext, 0., 0., 0., 1.);
+  cairo_translate (mContext, MARGIN, MARGIN);
+
+  /* Set up cairo font face. */
+  cairo_font_face_t *cairo_face;
+  cairo_face = cairo_ft_font_face_create_for_ft_face (ft_face, 0);
+  cairo_set_font_face (mContext, cairo_face);
+  cairo_set_font_size (mContext, FONT_SIZE);
+
+  /* Set up baseline. */
+  if (HB_DIRECTION_IS_HORIZONTAL (hb_buffer_get_direction(hb_buffer)))
+  {
+    cairo_font_extents_t font_extents;
+    cairo_font_extents (mContext, &font_extents);
+    double baseline = (FONT_SIZE - font_extents.height) * .5 + font_extents.ascent;
+    cairo_translate (mContext, 0, baseline);
+  }
+  else
+  {
+    cairo_translate (mContext, FONT_SIZE * .5, 0);
+  }
+
+  cairo_glyph_t *cairo_glyphs = cairo_glyph_allocate (len);
+  double current_x = 0;
+  double current_y = 0;
+
+  for (auto i = 0; i < len; i++)
+  {
+    cairo_glyphs[i].index = info[i].codepoint;
+    cairo_glyphs[i].x = current_x + pos[i].x_offset / 64.;
+    cairo_glyphs[i].y = -(current_y + pos[i].y_offset / 64.);
+    current_x += pos[i].x_advance / 64.;
+    current_y += pos[i].y_advance / 64.;
+  }
+  cairo_show_glyphs (mContext, cairo_glyphs, len);
+  cairo_glyph_free (cairo_glyphs);
 #else // TOY text
   cairo_set_source_rgba(mContext, text.mFGColor.R / 255.0, text.mFGColor.G / 255.0, text.mFGColor.B / 255.0, (BlendWeight(pBlend) * text.mFGColor.A) / 255.0);
   cairo_select_font_face(mContext, text.mFont, CAIRO_FONT_SLANT_NORMAL, text.mStyle == IText::kStyleBold ? CAIRO_FONT_WEIGHT_BOLD : CAIRO_FONT_WEIGHT_NORMAL);
