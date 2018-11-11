@@ -275,7 +275,7 @@ inline int GetMouseOver(IGraphicsMac* pGraphics)
   r.size.height = (float) pGraphics->WindowHeight();
   self = [super initWithFrame:r];
   
-#ifdef IGRAPHICS_NANOVG
+#if defined IGRAPHICS_NANOVG && defined IGRAPHICS_METAL
   if (!self.wantsLayer) {
     self.layer = [CAMetalLayer new];
     self.layer.opaque = YES;
@@ -321,20 +321,32 @@ inline int GetMouseOver(IGraphicsMac* pGraphics)
 - (void) viewDidMoveToWindow
 {
   NSWindow* pWindow = [self window];
+  
   if (pWindow)
   {
     [pWindow makeFirstResponder: self];
     [pWindow setAcceptsMouseMovedEvents: YES];
     
     if (mGraphics)
-    {
-      mGraphics->SetAllControlsDirty();
-    }
+      mGraphics->SetDisplayScale([pWindow backingScaleFactor]);
     
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(windowResized:) name:NSWindowDidEndLiveResizeNotification
                                                object:pWindow];
   }
+}
+
+- (void) viewDidChangeBackingProperties:(NSNotification *) notification
+{
+  NSWindow* pWindow = [self window];
+  
+  if (!pWindow)
+    return;
+  
+  CGFloat newScale = [pWindow backingScaleFactor];
+  
+  if (newScale != mGraphics->GetDisplayScale())
+    mGraphics->SetDisplayScale(newScale);
 }
 
 // not called for opengl/metal
@@ -343,7 +355,6 @@ inline int GetMouseOver(IGraphicsMac* pGraphics)
   if (mGraphics)
   {
     //TODO: can we really only get this context on the first draw call?
-
     if (!mGraphics->GetPlatformContext())
     {
         CGContextRef pCGC = nullptr;
@@ -355,31 +366,32 @@ inline int GetMouseOver(IGraphicsMac* pGraphics)
       
     if (mGraphics->GetPlatformContext())
     {
-      IRECT tmpBounds = ToIRECT(mGraphics, &bounds);
-      mGraphics->Draw(tmpBounds);
+      const NSRect *rects;
+      NSInteger numRects;
+      [self getRectsBeingDrawn:&rects count:&numRects];
+      IRECTList drawRects;
+
+      for (int i = 0; i < numRects; i++)
+        drawRects.Add(ToIRECT(mGraphics, &rects[i]));
+      
+      mGraphics->Draw(drawRects);
     }
   }
 }
 
 - (void) onTimer: (NSTimer*) pTimer
 {
-  IRECT r;
-#ifdef IGRAPHICS_NANOVG
-
-  //TODO: this is redrawing every IControl!
-  mGraphics->SetAllControlsDirty();
- 
-  if (mGraphics->IsDirty(r))
+  IRECTList rects;
+  if (mGraphics->IsDirty(rects))
   {
-    mGraphics->Draw(r);
-    [self setNeedsDisplayInRect:ToNSRect(mGraphics, r)];
-  }
+    mGraphics->SetAllControlsClean();
+#if !defined IGRAPHICS_NANOVG
+    for (int i = 0; i < rects.Size(); i++)
+      [self setNeedsDisplayInRect:ToNSRect(mGraphics, rects.Get(i))];
 #else
-  if (/*pTimer == mTimer && mGraphics && */mGraphics->IsDirty(r))
-  {
-    [self setNeedsDisplayInRect:ToNSRect(mGraphics, r)];
-  }
+    mGraphics->Draw(rects); // for metal/opengl drawRect is not called
 #endif
+  }
 }
 
 - (void) getMouseXY: (NSEvent*) pEvent x: (float*) pX y: (float*) pY
@@ -583,10 +595,10 @@ inline int GetMouseOver(IGraphicsMac* pGraphics)
   if (mTextFieldView)
     [self endUserInput ];
   
-  if (mWebView) {
-    [mWebView removeFromSuperview ];
-    mWebView = nullptr;
-  }
+//  if (mWebView) {
+//    [mWebView removeFromSuperview ];
+//    mWebView = nullptr;
+//  }
   
   if (mGraphics)
   {
@@ -738,12 +750,17 @@ inline int GetMouseOver(IGraphicsMac* pGraphics)
   mEdControl = nullptr;
 }
 
-- (void) createWebView: (NSRect) areaRect : (const char*) url
-{
-  mWebView = [[WKWebView alloc] initWithFrame: areaRect ];
-  [self addSubview: mWebView];
-  [mWebView loadRequest: [NSURLRequest requestWithURL: [NSURL URLWithString:[NSString stringWithUTF8String:url]]]];
-}
+//- (void) createWebView: (NSRect) areaRect : (const char*) url
+//{
+//  mWebView = [[WKWebView alloc] initWithFrame: areaRect ];
+//  [self addSubview: mWebView];
+//  [mWebView loadRequest: [NSURLRequest requestWithURL: [NSURL URLWithString:[NSString stringWithUTF8String:url]]]];
+//}
+//
+//-(void)userContentController:(WKUserContentController *)userContentController didReceiveScriptMessage:(WKScriptMessage *)message
+//{
+//  NSLog(@"%@",message.body);
+//}
 
 - (NSString*) view: (NSView*) pView stringForToolTip: (NSToolTipTag) tag point: (NSPoint) point userData: (void*) pData
 {
@@ -757,21 +774,6 @@ inline int GetMouseOver(IGraphicsMac* pGraphics)
 - (void) registerToolTip: (IRECT&) bounds
 {
   [self addToolTipRect: ToNSRect(mGraphics, bounds) owner: self userData: nil];
-}
-
-- (void) viewDidChangeBackingProperties:(NSNotification *) notification
-{
-  NSWindow* pWindow = [self window];
-
-  if (!pWindow)
-    return;
-
-  CGFloat newScale = [pWindow backingScaleFactor];
-
-  if (newScale != mGraphics->GetDisplayScale())
-  {
-    mGraphics->SetDisplayScale(newScale);
-  }
 }
 
 - (NSDragOperation)draggingEntered: (id <NSDraggingInfo>) sender
@@ -808,17 +810,17 @@ inline int GetMouseOver(IGraphicsMac* pGraphics)
   if(!mGraphics) // TODO: Why does this happen with reaper?
     return;
   
-  NSSize windowSize = [[self window] frame].size;
-  NSRect viewFrameInWindowCoords = [self convertRect: [self bounds] toView: nil];
+//  NSSize windowSize = [[self window] frame].size;
+//  NSRect viewFrameInWindowCoords = [self convertRect: [self bounds] toView: nil];
+//
+//  float width = windowSize.width - viewFrameInWindowCoords.origin.x;
+//  float height = windowSize.height - viewFrameInWindowCoords.origin.y;
 
-  float width = windowSize.width - viewFrameInWindowCoords.origin.x;
-  float height = windowSize.height - viewFrameInWindowCoords.origin.y;
-
-  float scaleX = width / mGraphics->Width();
-  float scaleY = height / mGraphics->Height();
+//  float scaleX = width / mGraphics->Width();
+//  float scaleY = height / mGraphics->Height();
   
   // Rescale
-  mGraphics->Resize(mGraphics->Width(), mGraphics->Height(), Clip(std::min(scaleX, scaleY), 0.1f, 10.f));
+  //mGraphics->Resize(mGraphics->Width(), mGraphics->Height(), Clip(std::min(scaleX, scaleY), 0.1f, 10.f));
   // Resize
   //mGraphics->Resize(width, height, mGraphics->GetScale());
 }

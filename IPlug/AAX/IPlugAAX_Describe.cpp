@@ -26,7 +26,7 @@
 #include "AAX_Assert.h"
 
 #ifndef BUNDLE_ID
-  #define BUNDLE_ID "com." BUNDLE_MFR ".aax." BUNDLE_NAME
+#define BUNDLE_ID BUNDLE_DOMAIN "." BUNDLE_MFR ".aax." BUNDLE_NAME
 #endif
 
 #define args(...) __VA_ARGS__
@@ -157,8 +157,11 @@ AAX_Result GetEffectDescriptions(AAX_ICollection* pC)
     setupInfo.mNeedsInputMIDI = PLUG_DOES_MIDI;
     setupInfo.mInputMIDINodeName = PLUG_NAME" Midi";
     setupInfo.mInputMIDIChannelMask = 0x0001;
-//    setupInfo.mNeedsGlobalMIDI = PLUG_DOES_MIDI;
-//    setupInfo.mGlobalMIDIEventMask = 0x3;
+    
+    setupInfo.mNeedsOutputMIDI = PLUG_DOES_MIDI;
+    setupInfo.mOutputMIDINodeName = PLUG_NAME" Midi";
+    setupInfo.mOutputMIDIChannelMask = 0x0001;
+    
     setupInfo.mNeedsTransport = true;
     setupInfo.mLatency = PLUG_LATENCY;
 

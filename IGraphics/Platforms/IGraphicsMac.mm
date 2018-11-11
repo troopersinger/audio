@@ -196,10 +196,12 @@ void* IGraphicsMac::OpenWindow(void* pParent)
   CloseWindow();
   mView = (IGRAPHICS_VIEW*) [[IGRAPHICS_VIEW alloc] initWithIGraphics: this];
   
-  IGRAPHICS_VIEW* view = (IGRAPHICS_VIEW*) mView;
+  IGRAPHICS_VIEW* pView = (IGRAPHICS_VIEW*) mView;
 
-  OnViewInitialized([view layer]);
+  OnViewInitialized([pView layer]);
   
+  SetDisplayScale([[NSScreen mainScreen] backingScaleFactor]);
+    
   GetDelegate()->LayoutUI(this);
 
   if (pParent) // Cocoa VST host.
@@ -235,12 +237,8 @@ bool IGraphicsMac::WindowIsOpen()
   return mView;
 }
 
-void IGraphicsMac::Resize(int w, int h, float scale)
+void IGraphicsMac::PlatformResize()
 {
-  if (w == Width() && h == Height() && scale == GetScale()) return;
-
-  IGraphics::Resize(w, h, scale);
-
   if (mView)
   {
     NSSize size = { static_cast<CGFloat>(WindowWidth()), static_cast<CGFloat>(WindowHeight()) };
@@ -252,9 +250,7 @@ void IGraphicsMac::Resize(int w, int h, float scale)
     [[NSAnimationContext currentContext] setDuration:0.0];
     [(IGRAPHICS_VIEW*) mView setFrameSize: size ];
     [NSAnimationContext endGrouping];
-  }
-  
-  OnResizeOrRescale();
+  }  
 }
 
 void IGraphicsMac::ClientToScreen(float& x, float& y)
@@ -417,7 +413,7 @@ void IGraphicsMac::UpdateTooltips()
 
   [(IGRAPHICS_VIEW*) mView removeAllToolTips];
 
-  if(mPopupControl && mPopupControl->GetExpanded())
+  if(mPopupControl && mPopupControl->GetState() > IPopupMenuControl::kCollapsed)
   {
     return;
   }
@@ -637,14 +633,14 @@ void IGraphicsMac::CreateTextEntry(IControl& control, const IText& text, const I
   }
 }
 
-void IGraphicsMac::CreateWebView(const IRECT& bounds, const char* url)
-{
-  if (mView)
-  {
-    NSRect areaRect = ToNSRect(this, bounds);
-    [(IGRAPHICS_VIEW*) mView createWebView:areaRect :url];
-  }
-}
+//void IGraphicsMac::CreateWebView(const IRECT& bounds, const char* url)
+//{
+//  if (mView)
+//  {
+//    NSRect areaRect = ToNSRect(this, bounds);
+//    [(IGRAPHICS_VIEW*) mView createWebView:areaRect :url];
+//  }
+//}
 
 void IGraphicsMac::SetMouseCursor(ECursor cursor)
 {

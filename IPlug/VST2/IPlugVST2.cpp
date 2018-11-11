@@ -16,9 +16,7 @@
 
 #include <cstdio>
 #include "IPlugVST2.h"
-#ifndef NO_PRESETS
 #include "IPlugPluginBase.h"
-#endif
 
 const int VST_VERSION = 2400;
 
@@ -380,7 +378,7 @@ VstIntPtr VSTCALLBACK IPlugVST2::VSTDispatcher(AEffect *pEffect, VstInt32 opCode
     }
     case effEditOpen:
     {
-#if defined(_WIN32) || defined(__LP64__) // __LP64__ = cocoa macOS
+#if defined OS_WIN || defined ARCH_64BIT
       if (_this->OpenWindow(ptr))
       {
         _this->OnUIOpen();

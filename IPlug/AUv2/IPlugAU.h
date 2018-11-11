@@ -50,9 +50,8 @@ struct IPlugInstanceInfo
   WDL_String mCocoaViewFactoryClassName;
 };
 
-/**  AudioUnit v2 API base class for an IPlug plug-in, inherits from IPlugAPIBase
-*   @ingroup APIClasses
-*/
+/**  AudioUnit v2 API base class for an IPlug plug-in
+*   @ingroup APIClasses */
 class IPlugAU : public IPlugAPIBase
               , public IPlugProcessor<PLUG_SAMPLE_DST>
 {
@@ -191,7 +190,6 @@ private:
 private:
   bool mActive = false; // TODO: is this necessary? is it correct?
   double mLastRenderSampleTime = -1.0;
-  WDL_String mBundleID;
   WDL_String mCocoaViewFactoryClassName;
   AudioComponentInstance mCI = nullptr;
   HostCallbackInfo mHostCallbacks;

@@ -22,6 +22,12 @@ static std::string ToCanvasColor(const IColor& color, float alpha = 1.0)
   return str.Get();
 }
 
+static val GetContext()
+{
+  val canvas = val::global("document").call<val>("getElementById", std::string("canvas"));
+  return canvas.call<val>("getContext", std::string("2d"));
+}
+
 /** IGraphics draw class HTML5 canvas
 * @ingroup DrawClasses */
 class IGraphicsCanvas : public IGraphicsPathBase
@@ -35,6 +41,8 @@ public:
   void DrawBitmap(IBitmap& bitmap, const IRECT& bounds, int srcX, int srcY, const IBlend* pBlend) override;
   void DrawRotatedBitmap(IBitmap& bitmap, float destCentreX, float destCentreY, double angle, int yOffsetZeroDeg, const IBlend* pBlend) override { IGraphicsPathBase::DrawRotatedBitmap(bitmap, destCentreX, destCentreY, DegToRad(angle), yOffsetZeroDeg, pBlend); }
   
+  void DrawResize() override;
+
   void PathClear() override { GetContext().call<void>("beginPath"); }
   void PathClose() override { GetContext().call<void>("closePath"); }
 
@@ -47,13 +55,6 @@ public:
   void PathStroke(const IPattern& pattern, float thickness, const IStrokeOptions& options, const IBlend* pBlend) override;
   void PathFill(const IPattern& pattern, const IFillOptions& options, const IBlend* pBlend) override;
 
-  void PathStateSave() override { GetContext().call<void>("save"); }
-  void PathStateRestore() override {  GetContext().call<void>("restore"); }
-
-  void PathTransformTranslate(float x, float y) override { GetContext().call<void>("translate", x, y); }
-  void PathTransformScale(float scaleX, float scaleY) override { GetContext().call<void>("scale", scaleX, scaleY); }
-  void PathTransformRotate(float angle) override { GetContext().call<void>("rotate", DegToRad(angle)); }
-
   IColor GetPoint(int x, int y) override { return COLOR_BLACK; } // TODO:
   void* GetDrawContext() override { return nullptr; } // TODO:
 
@@ -65,20 +66,10 @@ protected:
   APIBitmap* ScaleAPIBitmap(const APIBitmap* pBitmap, int scale) override;
 
 private:
-  void ClipRegion(const IRECT& r) override;
-  void ResetClipRegion() override;
-
-  val GetCanvas()
-  {
-    return val::global("document").call<val>("getElementById", std::string("canvas"));
-  }
-
-  val GetContext()
-  {
-    val canvas = GetCanvas();
-    return canvas.call<val>("getContext", std::string("2d"));
-  }
   
+  void PathTransformSetMatrix(const IMatrix& m) override;
+  void SetClipRegion(const IRECT& r) override;
+    
   void SetWebSourcePattern(const IPattern& pattern, const IBlend* pBlend = nullptr);
   void SetWebBlendMode(const IBlend* pBlend);
 };

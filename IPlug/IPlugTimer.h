@@ -17,27 +17,28 @@
 
 #pragma once
 
+/**
+ * @file This file includes classes for implementing timers - in order to get a regular callback on the message thread
+ * The interface is partially based on the api of Steinberg's timer.cpp from the VST3_SDK for compatibility, rewritten using SWELL: base/source/timer.cpp, so thanks to them */
+
+
 #include <cstring>
 #include <stdint.h>
 #include <cstring>
+#include <functional>
 #include "ptrlist.h"
 
 #include "IPlugPlatform.h"
 
+struct Timer;
+
+typedef std::function<void(Timer& t)> ITimerFunction;
+
 #if defined OS_WEB
-class Timer;
-
-class ITimerCallback
-{
-public:
-  virtual ~ITimerCallback() {}
-  virtual void OnTimer(Timer& t) = 0;
-};
-
 class Timer
 {
 public:
-  static Timer* Create(ITimerCallback& callback, uint32_t intervalMs)
+  static Timer* Create(ITimerFunction func, uint32_t intervalMs)
   {
     return new Timer();
   }
@@ -62,25 +63,10 @@ UINT_PTR SetTimer(HWND hwnd, UINT_PTR timerid, UINT rate, TIMERPROC tProc);
 BOOL KillTimer(HWND hwnd, UINT_PTR timerid);
 #endif
 
-/**
- * @file This file includes classes for implementing timers - in order to get a regular callback on the message thread
- * The interface is based on the api of Steinberg's timer.cpp from the VST3_SDK, rewritten using SWELL: base/source/timer.cpp, so thanks to them
- *
- */
-
-struct Timer;
-
-class ITimerCallback
-{
-public:
-  virtual ~ITimerCallback() {}
-  virtual void OnTimer(Timer& t) = 0;
-};
-
 struct Timer
 {
   virtual ~Timer() {};
-  static Timer* Create(ITimerCallback& callback, uint32_t intervalMs);
+  static Timer* Create(ITimerFunction func, uint32_t intervalMs);
   virtual void Stop() = 0;
   UINT_PTR ID = 0;
 };
@@ -88,8 +74,10 @@ struct Timer
 class Timer_impl : public Timer
 {
 public:
-  Timer_impl(ITimerCallback& callback, uint32_t intervalMs)
-  : mCallBackClass(callback)
+  Timer_impl(ITimerFunction func, uint32_t intervalMs)
+  : mTimerFunc(func)
+  , mIntervalMs(intervalMs)
+
   {
     ID = SetTimer(0, 0, intervalMs, TimerProc);
     
@@ -132,7 +120,7 @@ public:
       
       if (pTimer->ID == idEvent)
       {
-        pTimer->mCallBackClass.OnTimer(*pTimer);
+        pTimer->mTimerFunc(*pTimer);
         return;
       }
     }
@@ -140,7 +128,8 @@ public:
   
 private:
   static WDL_PtrList<Timer_impl> sTimers;
-  ITimerCallback& mCallBackClass;
+  ITimerFunction mTimerFunc;
+  uint32_t mIntervalMs;
 };
 
 #endif

@@ -150,16 +150,14 @@ IGraphicsAGG::~IGraphicsAGG()
 {
 }
 
-void IGraphicsAGG::OnResizeOrRescale()
+void IGraphicsAGG::DrawResize()
 {
   mPixelMap.create(WindowWidth() * GetDisplayScale(), WindowHeight() * GetDisplayScale());
   mRenBuf.attach(mPixelMap.buf(), mPixelMap.width(), mPixelMap.height(), mPixelMap.row_bytes());
   mRasterizer.SetOutput(mRenBuf);
   mRasterizer.ClearWhite();
     
-  mTransform = agg::trans_affine_scaling(GetScale(), GetScale());
-  
-  IGraphics::OnResizeOrRescale();
+  mTransform = agg::trans_affine_scaling(GetScale() * GetDisplayScale(), GetScale() * GetDisplayScale());
 }
 
 //IFontData IGraphicsAGG::LoadFont(const char* name, const int size)
@@ -213,7 +211,6 @@ void IGraphicsAGG::DrawBitmap(IBitmap& bitmap, const IRECT& dest, int srcX, int 
   PixfmtType imgPixfSrc(src);
   
   agg::trans_affine dstMtx(mTransform);
-  dstMtx *= agg::trans_affine_scaling(scale);
   
   agg::trans_affine srcMtx;
   srcMtx /= dstMtx;
@@ -304,7 +301,6 @@ void IGraphicsAGG::DrawRotatedMask(IBitmap& base, IBitmap& mask, IBitmap& top, f
 void IGraphicsAGG::PathArc(float cx, float cy, float r, float aMin, float aMax)
 {
   agg::trans_affine xform = mTransform;
-  xform *= agg::trans_affine_scaling(GetDisplayScale());
   
   agg::arc arc(cx, cy, r, r, DegToRad(aMin - 90.f), DegToRad(aMax - 90.f));
   arc.approximation_scale(xform.scale());
@@ -319,7 +315,6 @@ void IGraphicsAGG::PathArc(float cx, float cy, float r, float aMin, float aMax)
 void IGraphicsAGG::PathMoveTo(float x, float y)
 {
   agg::trans_affine xform = mTransform;
-  xform *= agg::trans_affine_scaling(GetDisplayScale());
   
   double xd = x;
   double yd = y;
@@ -331,7 +326,6 @@ void IGraphicsAGG::PathMoveTo(float x, float y)
 void IGraphicsAGG::PathLineTo(float x, float y)
 {
   agg::trans_affine xform = mTransform;
-  xform *= agg::trans_affine_scaling(GetDisplayScale());
   
   double xd = x;
   double yd = y;
@@ -343,7 +337,6 @@ void IGraphicsAGG::PathLineTo(float x, float y)
 void IGraphicsAGG::PathCurveTo(float x1, float y1, float x2, float y2, float x3, float y3)
 {
   agg::trans_affine xform = mTransform;
-  xform *= agg::trans_affine_scaling(GetDisplayScale());
   
   double x1d = x1;
   double y1d = y1;
@@ -386,7 +379,6 @@ void StrokeOptions(StrokeType& strokes, double thickness, const IStrokeOptions& 
 void IGraphicsAGG::PathStroke(const IPattern& pattern, float thickness, const IStrokeOptions& options, const IBlend* pBlend)
 {
   agg::trans_affine xform = mTransform;
-  xform *= agg::trans_affine_scaling(GetDisplayScale());
   
   if (options.mDash.GetCount())
   {

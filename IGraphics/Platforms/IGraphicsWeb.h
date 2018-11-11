@@ -41,7 +41,6 @@ public:
 
   void HideMouseCursor(bool hide, bool returnToStartPos) override;
   void ForceEndUserEdit() override {} // TODO:
-//  void Resize(int w, int h, float scale) override;
   void* OpenWindow(void* pParent) override;
   void CloseWindow() override {} // TODO:
   void* GetWindow() override { return nullptr; } // TODO:
@@ -52,9 +51,9 @@ public:
   
   IPopupMenu* CreatePopupMenu(IPopupMenu& menu, const IRECT& bounds, IControl* pCaller) override;
   
-  void CreateTextEntry(IControl& control, const IText& text, const IRECT& bounds, const char* str) override {} // TODO:
-  void PromptForFile(WDL_String& filename, WDL_String& path, EFileAction action, const char* ext) override {} // TODO:
-  void PromptForDirectory(WDL_String& path) override {} // TODO:
+  void CreateTextEntry(IControl& control, const IText& text, const IRECT& bounds, const char* str) override;
+  void PromptForFile(WDL_String& filename, WDL_String& path, EFileAction action, const char* ext) override;
+  void PromptForDirectory(WDL_String& path) override;
   bool PromptForColor(IColor& color, const char* str) override { return false; } // TODO:
   bool OpenURL(const char* url, const char* msgWindowTitle, const char* confirmMsg, const char* errMsgOnFailure) override;
   

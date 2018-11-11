@@ -18,7 +18,6 @@
 #include "IPlugPlatform.h"
 #include "IGraphicsConstants.h"
 
-
 class IGraphics;
 class IControl;
 struct IRECT;
@@ -50,23 +49,25 @@ class LICE_IFont; // TODO: move this
 
 #ifdef IGRAPHICS_AGG
 #include "IGraphicsAGG_src.h"
-typedef agg::pixel_map* BitmapData;
+  typedef agg::pixel_map* BitmapData;
 #elif defined IGRAPHICS_CAIRO
-#if defined OS_MAC || defined OS_LINUX
-#include "cairo/cairo.h"
-#elif defined OS_WIN
-#include "cairo/src/cairo.h"
-#else
-#error Cairo not supported on this platform
-#endif
-typedef cairo_surface_t* BitmapData;
+  #if defined OS_MAC || defined OS_LINUX
+    #include "cairo/cairo.h"
+  #elif defined OS_WIN
+    #include "cairo/src/cairo.h"
+  #else
+    #error NOT IMPLEMENTED
+  #endif
+  typedef cairo_surface_t* BitmapData;
 #elif defined IGRAPHICS_NANOVG
-typedef int BitmapData;
+  typedef int BitmapData;
 #elif defined IGRAPHICS_LICE
-#include "lice.h"
-typedef LICE_IBitmap* BitmapData;
-#elif defined EMSCRIPTEN
-typedef void* BitmapData;
+  #include "lice.h"
+  typedef LICE_IBitmap* BitmapData;
+#elif defined IGRAPHICS_CANVAS
+  typedef void* BitmapData;
+#else // NO_IGRAPHICS
+  typedef void* BitmapData;
 #endif
 
 class APIBitmap
@@ -242,7 +243,7 @@ struct IColor
 
   static IColor GetRandomColor(bool randomAlpha = false)
   {
-    int A = randomAlpha ? rand() & 0xFF : 255;
+    int A = randomAlpha ? std::rand() & 0xFF : 255;
     int R = std::rand() & 0xFF;
     int G = std::rand() & 0xFF;
     int B = std::rand() & 0xFF;
@@ -389,6 +390,68 @@ struct IStrokeOptions
   DashOptions mDash;
 };
 
+/** Used to store transformation matrices**/
+
+static double DegToRad(double deg);
+
+struct IMatrix
+{
+  IMatrix()
+  {
+    mTransform[0] = 1.0;
+    mTransform[1] = 0.0;
+    mTransform[2] = 0.0;
+    mTransform[3] = 1.0;
+    mTransform[4] = 0.0;
+    mTransform[5] = 0.0;
+  }
+    
+  IMatrix(float sx, float shx, float shy, float sy, float tx, float ty)
+  {
+    mTransform[0] = sx;
+    mTransform[1] = shx;
+    mTransform[2] = shy;
+    mTransform[3] = sy;
+    mTransform[4] = tx;
+    mTransform[5] = ty;
+  }
+  
+  void Translate(float x, float y)
+  {
+    IMatrix multiplier(1.0, 0.0, 0.0, 1.0, x, y);
+    Transform(multiplier);
+  }
+  
+  void Scale(float x, float y)
+  {
+    IMatrix multiplier(x, 0.0, 0.0, y, 0.0, 0.0);
+    Transform(multiplier);
+  }
+  
+  void Rotate(float a)
+  {
+    a = DegToRad(a);
+    const float c = std::cos(a);
+    const float s = std::sin(a);
+    
+    IMatrix multiplier(c, s, -s, c, 0.f, 0.f);
+    Transform(multiplier);
+  }
+  
+  void Transform(const IMatrix& m)
+  {
+    IMatrix p = *this;
+
+    mTransform[0] = m.mTransform[0] * p.mTransform[0] + m.mTransform[1] * p.mTransform[2];
+    mTransform[1] = m.mTransform[0] * p.mTransform[1] + m.mTransform[1] * p.mTransform[3];
+    mTransform[2] = m.mTransform[2] * p.mTransform[0] + m.mTransform[3] * p.mTransform[2];
+    mTransform[3] = m.mTransform[2] * p.mTransform[1] + m.mTransform[3] * p.mTransform[3];
+    mTransform[4] = m.mTransform[4] * p.mTransform[0] + m.mTransform[5] * p.mTransform[2] + p.mTransform[4];
+    mTransform[5] = m.mTransform[4] * p.mTransform[1] + m.mTransform[5] * p.mTransform[3] + p.mTransform[5];
+  }
+  
+  double mTransform[6];
+};
 struct IColorStop
 {
   IColorStop()
@@ -580,7 +643,8 @@ struct IRECT
   inline float H() const { return B - T; }
   inline float MW() const { return 0.5f * (L + R); }
   inline float MH() const { return 0.5f * (T + B); }
-
+  inline float Area() const { return W() * H(); }
+  
   inline IRECT Union(const IRECT& rhs) const
   {
     if (Empty()) { return rhs; }
@@ -624,6 +688,16 @@ struct IRECT
 
     if (y < T) y = T;
     else if (y > B) y = B;
+  }
+  
+  //The two rects cover exactly the area returned by Union()
+  bool Mergeable(const IRECT& rhs) const
+  {
+    if (Empty() || rhs.Empty())
+      return true;
+    if (L == rhs.L && R == rhs.R && ((T >= rhs.T && T <= rhs.B) || (rhs.T >= T && rhs.T <= B)))
+      return true;
+    return T == rhs.T && B == rhs.B && ((L >= rhs.L && L <= rhs.R) || (rhs.L >= L && rhs.L <= R));
   }
   
   inline IRECT FracRect(EDirection layoutDir, float frac, bool fromTopOrRight = false) const
@@ -715,7 +789,16 @@ struct IRECT
   
   bool IsPixelAligned() const
   {
-    return !(L - floor(L) && T - floor(T) && R - floor(R) && B - floor(B));
+    return !(L - std::floor(L) && T - std::floor(T) && R - std::floor(R) && B - std::floor(B));
+  }
+  
+  // Pixel aligns in an inclusive manner (moves all points outwards)
+  inline void PixelAlign() 
+  {
+    L = std::floor(L);
+    T = std::floor(T);
+    R = std::ceil(R);
+    B = std::ceil(B);
   }
   
   inline void Pad(float padding)
@@ -918,11 +1001,6 @@ struct IRECT
     B = std::ceil(B * scale);
   }
 
-  IRECT GetFlipped(int graphicsHeight) const
-  {
-    return IRECT(L, graphicsHeight - T, R, graphicsHeight - B);
-  }
-
   IRECT GetCentredInside(IRECT sr) const
   {
     IRECT r;
@@ -976,12 +1054,152 @@ struct IMouseMod
   bool L, R, S, C, A;
   IMouseMod(bool l = false, bool r = false, bool s = false, bool c = false, bool a = false)
     : L(l), R(r), S(s), C(c), A(a) {}
+  
+  void DBGPrint() { DBGMSG("L: %i, R: %i, S: %i, C: %i,: A: %i\n", L, R, S, C, A); }
 };
 
 struct IMouseInfo
 {
   float x, y;
   IMouseMod ms;
+};
+
+/** Used to manage a list of rectangular areas and optimize them for drawing to the screen. */
+class IRECTList
+{
+public:
+  int Size() const { return mRects.GetSize(); }
+  
+  void Add(const IRECT rect)
+  {
+    mRects.Add(rect);
+  }
+  
+  void Set(int idx, const IRECT rect)
+  {
+    *(mRects.GetFast() + idx) = rect;
+  }
+  
+  const IRECT& Get(int idx) const
+  {
+    return *(mRects.GetFast() + idx);
+  }
+  
+  void Clear()
+  {
+    mRects.Resize(0);
+  }
+  
+  IRECT Bounds()
+  {
+    IRECT r = Get(0);
+    for (auto i = 1; i < mRects.GetSize(); i++)
+      r = r.Union(Get(i));
+    return r;
+  }
+  
+  void PixelAlign()
+  {
+    for (auto i = 0; i < Size(); i++)
+    {
+      IRECT r = Get(i);
+      r.PixelAlign();
+      Set(i, r);
+    }
+  }
+  
+  void Optimize()
+  {
+    // Remove rects that are contained by other rects and intersections
+    for (int i = 0; i < Size(); i++)
+    {
+      for (int j = i + 1; j < Size(); j++)
+      {
+        if (Get(i).Contains(Get(j)))
+        {
+          mRects.Delete(j);
+          j--;
+        }
+        else if (Get(j).Contains(Get(i)))
+        {
+          mRects.Delete(i);
+          i--;
+          break;
+        }
+        else if (Get(i).Intersects(Get(j)))
+        {
+          IRECT intersection = Get(i).Intersect(Get(j));
+            
+          if (Get(i).Mergeable(intersection))
+            Set(i, Shrink(Get(i), intersection));
+          else if (Get(j).Mergeable(intersection))
+            Set(j, Shrink(Get(j), intersection));
+          else if (Get(i).Area() < Get(j).Area())
+            Set(i, Split(Get(i), intersection));
+          else
+            Set(j, Split(Get(j), intersection));
+        }
+      }
+    }
+    
+    // Merge any rects that can be merged
+    for (int i = 0; i < Size(); i++)
+    {
+      for (int j = i + 1; j < Size(); j++)
+      {
+        if (Get(i).Mergeable(Get(j)))
+        {
+          Set(j, Get(i).Union(Get(j)));
+          mRects.Delete(i);
+          i = -1;
+          break;
+        }
+      }
+    }
+  }
+  
+private:
+  
+  IRECT Shrink(const IRECT &r, const IRECT &i)
+  {
+    if (i.L != r.L)
+      return IRECT(r.L, r.T, i.L, r.B);
+    if (i.T != r.T)
+      return IRECT(r.L, r.T, r.R, i.T);
+    if (i.R != r.R)
+      return IRECT(i.R, r.T, r.R, r.B);
+    return IRECT(r.L, i.B, r.R, r.B);
+  }
+  
+  IRECT Split(const IRECT r, const IRECT &i)
+  {
+    if (r.L == i.L)
+    {
+      if (r.T == i.T)
+      {
+        Add(IRECT(i.R, r.T, r.R, i.B));
+        return IRECT(r.L, i.B, r.R, r.B);
+      }
+      else
+      {
+        Add(IRECT(r.L, r.T, r.R, i.T));
+        return IRECT(i.R, i.T, r.R, r.B);
+      }
+    }
+    
+    if (r.T == i.T)
+    {
+      Add(IRECT(r.L, r.T, i.L, i.B));
+      return IRECT(r.L, i.B, r.R, r.B);
+    }
+    else
+    {
+      Add(IRECT(r.L, r.T, r.R, i.T));
+      return IRECT(r.L, i.T, i.L, r.B);
+    }
+  }
+  
+  WDL_TypedBuf<IRECT> mRects;
 };
 
 // TODO: static storage needs thread safety mechanism
@@ -1007,7 +1225,6 @@ public:
   struct DataKey
   {
     // N.B. - hashID is not guaranteed to be unique
-
     uint32_t hashID;
     WDL_String name;
     double scale;
@@ -1024,11 +1241,11 @@ public:
     int i, n = mDatas.GetSize();
     for (i = 0; i < n; ++i)
     {
-      DataKey* key = mDatas.Get(i);
+      DataKey* pKey = mDatas.Get(i);
 
       // Use the hash id for a quick search and then confirm with the scale and identifier to ensure uniqueness
-      if (key->hashID == hashID && scale == key->scale && !strcmp(str, key->name.Get()))
-        return key->data;
+      if (pKey->hashID == hashID && scale == pKey->scale && !strcmp(str, pKey->name.Get()))
+        return pKey->data;
     }
     return nullptr;
   }
@@ -1067,7 +1284,7 @@ public:
     int i, n = mDatas.GetSize();
     for (i = 0; i < n; ++i)
     {
-      // FIX - this doesn't work - why not?
+      // FIXME: - this doesn't work - why not?
       /*
       DataKey* key = mDatas.Get(i);
       T* data = key->data;

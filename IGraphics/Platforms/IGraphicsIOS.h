@@ -4,7 +4,7 @@
 
 /** IGraphics platform class for IOS
 *   @ingroup PlatformClasses */
-class IGraphicsIOS : public IGraphicsNanoVG
+class IGraphicsIOS final : public IGraphicsNanoVG
 {
 public:
   IGraphicsIOS(IGEditorDelegate& dlg, int w, int h, int fps, float scale);
@@ -15,7 +15,7 @@ public:
   void* OpenWindow(void* pWindow) override;
   void CloseWindow() override;
   bool WindowIsOpen() override;
-  void Resize(int w, int h, float scale) override;
+  void PlatformResize() override;
 
   int ShowMessageBox(const char* str, const char* caption, int type) override;
   void ForceEndUserEdit() override;

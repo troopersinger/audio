@@ -42,6 +42,9 @@
     <ClCompile Include="..\..\..\IPlug\IPlugPluginBase.cpp">
       <Filter>IPlug</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\IGraphics\Controls\IPopupMenuControl.cpp">
+      <Filter>IGraphics\Controls</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\resources\resource.h">
@@ -86,7 +89,7 @@
     <ClInclude Include="..\..\..\IGraphics\IGraphicsStructs.h">
       <Filter>IGraphics</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\IGraphics\IGraphicsUtilites.h">
+    <ClInclude Include="..\..\..\IGraphics\IGraphicsUtilities.h">
       <Filter>IGraphics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\IGraphics\Controls\IControls.h">

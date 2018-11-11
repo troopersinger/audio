@@ -34,13 +34,8 @@
   
   // If we've moved to a window by the time our frame is being set, we can take its scale as our own
   if (self.window)
-  {
     scale = self.window.screen.scale;
-  }
   
-  if(mGraphics)
-    mGraphics->SetDisplayScale(scale);
-
   CGSize drawableSize = self.bounds.size;
   
   // Since drawable size is in pixels, we need to multiply by the scale to move from points to pixels
@@ -105,7 +100,7 @@
   //  [self pTouchesEnded: pTouches withEvent: event];
 }
 
-- (CAMetalLayer *)metalLayer {
+- (CAMetalLayer*) metalLayer {
   return (CAMetalLayer *)self.layer;
 }
 
@@ -131,13 +126,15 @@
   }
 }
 
-- (void)redraw:(CADisplayLink *)displayLink
+- (void)redraw:(CADisplayLink*) displayLink
 {
-  //TODO: this is redrawing every IControl!
-  IRECT r = mGraphics->GetBounds();
-  mGraphics->IsDirty(r);
+  IRECTList rects;
   
-  mGraphics->Draw(r);
+  if (mGraphics->IsDirty(rects))
+  {
+    mGraphics->SetAllControlsClean();
+    mGraphics->Draw(rects);
+  }
 }
 
 - (BOOL) isOpaque

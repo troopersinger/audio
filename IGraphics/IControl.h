@@ -8,7 +8,7 @@
 #include <cstring>
 #include <cstdlib>
 
-#ifdef VST3_API
+#if defined VST3_API || defined VST3C_API
 #undef stricmp
 #undef strnicmp
 #include "pluginterfaces/vst/ivstcontextmenu.h"
@@ -26,7 +26,7 @@
  * Some controls respond to mouse actions, either by moving a bitmap, transforming a bitmap, or cycling through a set of bitmaps.
  * Other controls are readouts only. */
 class IControl
-#ifdef VST3_API
+#if defined VST3_API || defined VST3C_API
 : public Steinberg::Vst::IContextMenuTarget
 , public Steinberg::FObject
 #endif
@@ -328,7 +328,12 @@ public:
   IEditorDelegate* GetDelegate() { return &mDelegate; }
   
   /** Used internally to set the mGraphics variable */
-  void SetGraphics(IGraphics* pGraphics) { mGraphics = pGraphics; }
+  void SetGraphics(IGraphics* pGraphics)
+  {
+    mGraphics = pGraphics;
+    OnResize();
+    OnRescale();
+  }
   
   /** @return A pointer to the IGraphics context that owns this control */ 
   IGraphics* GetUI() { return mGraphics; }
@@ -378,7 +383,7 @@ public:
     return elapsed.count() / mAnimationDuration.count();
   }
   
-#ifdef VST3_API
+#if defined VST3_API || defined VST3C_API
   Steinberg::tresult PLUGIN_API executeMenuItem (Steinberg::int32 tag) override { OnContextSelection(tag); return Steinberg::kResultOk; }
 #endif
   
@@ -399,7 +404,7 @@ protected:
   IText mText;
 
   int mTextEntryLength = DEFAULT_TEXT_ENTRY_LEN;
-  double mValue = 0.;
+  double mValue = 0.; // mValue is mapped to the normalized parameter value in controls where mParamIdx > -1
   double mDefaultValue = -1.; // it's important this is -1 to start with
   double mClampLo = 0.;
   double mClampHi = 1.;
@@ -422,7 +427,7 @@ protected:
   IColor mPTHighlightColor = COLOR_RED;
   bool mPTisHighlighted = false;
 
-#ifdef VST3_API
+#if defined VST3_API || defined VST3C_API
   OBJ_METHODS(IControl, FObject)
   DEFINE_INTERFACES
   DEF_INTERFACE (IContextMenuTarget)
@@ -605,6 +610,46 @@ public:
     float mouseDownX, mouseDownY;
     g.GetMouseDownPoint(mouseDownX, mouseDownY);
     g.FillCircle(GetColor(kHL), mouseDownX, mouseDownY, mFlashCircleRadius);
+  }
+  
+  IRECT DrawVectorButton(IGraphics&g, const IRECT& bounds, bool pressed, bool mouseOver)
+  {
+    g.FillRect(GetColor(kBG), bounds);
+    
+    IRECT handleBounds = GetAdjustedHandleBounds(bounds);
+    const float cornerRadius = mRoundness * (handleBounds.W() / 2.f);
+    
+    if (pressed)
+    {
+      g.FillRoundRect(GetColor(kPR), handleBounds, cornerRadius);
+      
+      //inner shadow
+      if (mDrawShadows && mEmboss)
+      {
+        g.PathRect(handleBounds.GetHSliced(mShadowOffset));
+        g.PathRect(handleBounds.GetVSliced(mShadowOffset));
+        g.PathFill(GetColor(kSH));
+      }
+    }
+    else
+    {
+      //outer shadow
+      if (mDrawShadows && !mEmboss)
+        g.FillRoundRect(GetColor(kSH), handleBounds.GetShifted(mShadowOffset, mShadowOffset), cornerRadius);
+      
+      g.FillRoundRect(GetColor(kFG), handleBounds, cornerRadius);
+    }
+    
+    if(mouseOver)
+      g.FillRoundRect(GetColor(kHL), handleBounds, cornerRadius);
+    
+    if(mControl->GetAnimationFunction())
+      DrawFlashCircle(g);
+    
+    if(mDrawFrame)
+      g.DrawRoundRect(GetColor(kFR), handleBounds, cornerRadius, 0, mFrameThickness);
+    
+    return handleBounds;
   }
   
 protected:
@@ -942,19 +987,31 @@ protected:
   bool mDrawTrackFrame = true;
 };
 
-/** Parent for switch controls (including buttons a.k.a. momentary switches)
- */
+/** Parent for buttons a.k.a. momentary switches - cannot be linked to parameters.
+ * The default action function triggers the default click function, which returns mValue to 0. after DEFAULT_ANIMATION_DURATION */
+class IButtonControlBase : public IControl
+{
+public:
+  IButtonControlBase(IGEditorDelegate& dlg, IRECT bounds, IActionFunction aF);
+  
+  virtual ~IButtonControlBase() {}
+  virtual void OnMouseDown(float x, float y, const IMouseMod& mod) override;
+  virtual void OnEndAnimation() override;
+};
+
+/** Parent for switch controls */
 class ISwitchControlBase : public IControl
 {
 public:
-  ISwitchControlBase(IGEditorDelegate& dlg, IRECT bounds, int paramIdx = kNoParameter, IActionFunction aF = nullptr,
-    int numStates = 2);
+  ISwitchControlBase(IGEditorDelegate& dlg, IRECT bounds, int paramIdx = kNoParameter, IActionFunction aF = nullptr, int numStates = 2);
 
   virtual ~ISwitchControlBase() {}
 
   virtual void OnMouseDown(float x, float y, const IMouseMod& mod) override;
+  virtual void OnMouseUp(float x, float y, const IMouseMod& mod) override;
 protected:
   int mNumStates;
+  bool mMouseDown = false;
 };
 
 /** An abstract IControl base class that you can inherit from in order to make a control that pops up a menu to browse files */
@@ -967,7 +1024,7 @@ public:
     mExtension.Set(extension);
   }
 
-  ~IDirBrowseControlBase();
+  virtual ~IDirBrowseControlBase();
 
   int NItems();
 
@@ -981,7 +1038,8 @@ public:
 
 private:
   void ScanDirectory(const char* path, IPopupMenu& menuToAddTo);
-
+  void CollectSortedItems(IPopupMenu* pMenu);
+  
 protected:
   int mSelectedIndex = -1;
   IPopupMenu* mSelectedMenu = nullptr;
@@ -989,6 +1047,7 @@ protected:
   WDL_PtrList<WDL_String> mPaths;
   WDL_PtrList<WDL_String> mPathLabels;
   WDL_PtrList<WDL_String> mFiles;
+  WDL_PtrList<IPopupMenu::Item> mItems; // ptr to item for each file
   WDL_String mExtension;
 };
 

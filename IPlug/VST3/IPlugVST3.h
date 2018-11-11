@@ -43,9 +43,8 @@ class IPlugVST3View;
 using namespace Steinberg;
 
 #pragma mark - IPlugVST3 constructor
-/**  VST3 base class for an IPlug plug-in, inherits from IPlugAPIBase
-*   @ingroup APIClasses
-*/
+/**  VST3 base class for a non-distributed IPlug VST3 plug-in
+*   @ingroup APIClasses */
 class IPlugVST3 : public IPlugAPIBase
                 , public IPlugProcessor<PLUG_SAMPLE_DST>
                 , public Vst::SingleComponentEffect
@@ -64,7 +63,7 @@ public:
   //IPlugProcessor
   void ResizeGraphics(int viewWidth, int viewHeight, float scale) override;
   void SetLatency(int samples) override;
-  bool SendMidiMsg(const IMidiMsg& msg) override { return false; } //TODO: SendMidiMsg
+  bool SendMidiMsg(const IMidiMsg& msg) override;
   
   // AudioEffect
   tresult PLUGIN_API initialize(FUnknown* context) override;
@@ -127,7 +126,7 @@ private:
   uint64_t getSpeakerArrForChans(int32 chans);
 
   bool mSidechainActive = false;
-//  IMidiQueue mMidiOutputQueue;
+  IMidiQueue mMidiOutputQueue;
   Vst::ProcessContext mProcessContext;
   std::vector <IPlugVST3View*> mViews;
   

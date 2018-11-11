@@ -4,8 +4,6 @@ cd "$(dirname "$0")"
 
 cd ..
 
-pwd
-
 if [ "$1" == "websocket" ]
 then
   websocket=1
@@ -57,10 +55,6 @@ then
   wasmOut += \"AudioWorkletGlobalScope.WAM.IPlug = { ENVIRONMENT: 'WEB' }\\\n\";
   wasmOut += \"AudioWorkletGlobalScope.WAM.IPlug.wasmBinary = new Uint8Array([\" + wasmStr + \"]);\";
   fs.writeFileSync(\"IPlugEffect-WAM.wasm.js\", wasmOut);
-  // later we will possibly switch to base64
-  // as suggested by Stephane Letz / Faust
-  // let base64 = wasmData.toString(\"base64\");
-  // fs.writeFileSync(\"IPlugEffect-WAM.base64.js\", base64);
   " > encode-wasm.js
 
   node encode-wasm.js
@@ -70,20 +64,26 @@ then
   cp ../../../../Dependencies/IPlug/WAM_SDK/wamsdk/*.js .
   cp ../../../../Dependencies/IPlug/WAM_AWP/*.js .
   cp ../../../../IPlug/WEB/Template/scripts/IPlugWAM-awn.js IPlugEffect-awn.js
-  sed -i "" s/IPlugWAM/IPlugEffect/g IPlugEffect-awn.js
+  sed -i.bak s/NAME_PLACEHOLDER/IPlugEffect/g IPlugEffect-awn.js
   cp ../../../../IPlug/WEB/Template/scripts/IPlugWAM-awp.js IPlugEffect-awp.js
-  sed -i "" s/IPlugWAM/IPlugEffect/g IPlugEffect-awp.js
+  sed -i.bak s/NAME_PLACEHOLDER/IPlugEffect/g IPlugEffect-awp.js
+  rm *.bak
   cd ..
 
   #copy in the template html - comment if you have customised the html
   cp ../../../IPlug/WEB/Template/IPlugWAM-standalone.html index.html
-  sed -i "" s/IPlugWAM/IPlugEffect/g index.html
+  sed -i.bak s/NAME_PLACEHOLDER/IPlugEffect/g index.html
+  rm *.bak
+
+  cp ../../../IPlug/WEB/Template/favicon.ico favicon.ico
+
 else
   #copy in the template html for websocket - comment if you have customised the html
   cd build-web
   pwd
   cp ../../../IPlug/WEB/Template/IPlugWeb-remote.html index.html
-  sed -i "" s/IPlugWEB/IPlugEffect/g index.html
+  sed -i.bak s/IPlugWEB/IPlugEffect/g index.html
+  rm *.bak
 fi
 
 cd ../
@@ -91,7 +91,7 @@ cd ../
 echo
 echo MAKING  - WEB WASM MODULE -----------------------------
 
-emmake make --makefile projects/IPlugEffect-wam-controller.mk CFLAGS=-DWEBSOCKET_CLIENT=$websocket
+emmake make --makefile projects/IPlugEffect-wam-controller.mk EXTRA_CFLAGS=-DWEBSOCKET_CLIENT=$websocket
 
 if [ $? -ne "0" ]
 then
@@ -99,7 +99,11 @@ then
   exit 1
 fi
 
-mv build-web/scripts/*.wasm build-web
+# TODO: why is this a problem on mac?
+if [ "$(uname)" == "Darwin" ]
+then
+  mv build-web/scripts/*.wasm build-web
+fi
 
 cd build-web
 
@@ -111,5 +115,5 @@ then
   emrun --browser chrome --no_server --port=8001 index.html
 else
   emrun --browser chrome --no_emrun_detect index.html
-#   emrun --browser firefox index.html
+# emrun --browser firefox index.html
 fi

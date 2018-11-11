@@ -176,15 +176,12 @@ LRESULT CALLBACK IGraphicsWin::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
           return 0; // TODO: check this!
         }
 
-        IRECT dirtyR;
-
-#ifdef IGRAPHICS_NANOVG
-        dirtyR = pGraphics->GetBounds();
+        IRECTList rects;
+         
+        if (pGraphics->IsDirty(rects))
         {
-#else
-        if (pGraphics->IsDirty(dirtyR))
-        {
-#endif
+          pGraphics->SetAllControlsClean();
+          IRECT dirtyR = rects.Bounds();
           dirtyR.ScaleBounds(pGraphics->GetScale());
           RECT r = { (LONG) dirtyR.L, (LONG) dirtyR.T, (LONG) dirtyR.R, (LONG) dirtyR.B };
 
@@ -350,8 +347,10 @@ LRESULT CALLBACK IGraphicsWin::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
         BeginPaint(hWnd, &ps);
         #endif
         IRECT ir(r.left, r.top, r.right, r.bottom);
+        IRECTList rects;
         ir.ScaleBounds(1. / pGraphics->GetScale());
-        pGraphics->Draw(ir);
+        rects.Add(ir);
+        pGraphics->Draw(rects);
         #ifdef IGRAPHICS_NANOVG
         SwapBuffers((HDC)pGraphics->mPlatformContext);
         EndPaint(hWnd, &ps);
@@ -549,21 +548,15 @@ void IGraphicsWin::ForceEndUserEdit()
 
 #define SETPOS_FLAGS SWP_NOZORDER | SWP_NOMOVE | SWP_NOACTIVATE
 
-void IGraphicsWin::Resize(int w, int h, float scale)
+void IGraphicsWin::PlatformResize()
 {
-  if (w == Width() && h == Height() && scale == GetScale()) return;
-
-  int oldWindowWidth = WindowWidth(), oldWindowHeight = WindowHeight();
-  IGraphics::Resize(w, h, scale);
-
-  int dw = WindowWidth() - oldWindowWidth, dh = WindowHeight() - oldWindowHeight;
-
   if (WindowIsOpen())
   {
     HWND pParent = 0, pGrandparent = 0;
     int dlgW = 0, dlgH = 0, parentW = 0, parentH = 0, grandparentW = 0, grandparentH = 0;
     GetWindowSize(mPlugWnd, &dlgW, &dlgH);
-
+    int dw = WindowWidth() - dlgW, dh = WindowHeight() - dlgH;
+      
     if (IsChildWindow(mPlugWnd))
     {
       pParent = GetParent(mPlugWnd);
@@ -580,15 +573,15 @@ void IGraphicsWin::Resize(int w, int h, float scale)
 
     // don't want to touch the host window in VST3
 #ifndef VST3_API
-      if(pParent)
-      {
-        SetWindowPos(pParent, 0, 0, 0, parentW + dw, parentH + dh, SETPOS_FLAGS);
-      }
+    if(pParent)
+    {
+      SetWindowPos(pParent, 0, 0, 0, parentW + dw, parentH + dh, SETPOS_FLAGS);
+    }
 
-      if(pGrandparent)
-      {
-        SetWindowPos(pGrandparent, 0, 0, 0, grandparentW + dw, grandparentH + dh, SETPOS_FLAGS);
-      }
+    if(pGrandparent)
+    {
+      SetWindowPos(pGrandparent, 0, 0, 0, grandparentW + dw, grandparentH + dh, SETPOS_FLAGS);
+    }
 #endif
 
     RECT r = { 0, 0, WindowWidth(), WindowHeight() };
@@ -652,16 +645,15 @@ void* IGraphicsWin::OpenWindow(void* pParent)
   }
 
   sFPS = FPS();
-  mPlugWnd = CreateWindow(wndClassName, "IPlug", WS_CHILD | WS_VISIBLE,
-                          x, y, w, h, mParentWnd, 0, mHInstance, this);
+  mPlugWnd = CreateWindow(wndClassName, "IPlug", WS_CHILD | WS_VISIBLE, x, y, w, h, mParentWnd, 0, mHInstance, this);
 
   HDC dc = GetDC(mPlugWnd);
   SetPlatformContext(dc);
   ReleaseDC(mPlugWnd, dc);
 
-  SetDisplayScale(1);
-
   OnViewInitialized((void*) dc);
+  
+  SetDisplayScale(1); // CHECK!
 
   GetDelegate()->LayoutUI(this);
 
@@ -737,6 +729,7 @@ HWND IGraphicsWin::GetMainWnd()
         mMainWnd = parentWnd;
         parentWnd = GetParent(mMainWnd);
       }
+      
       GetWndClassName(mMainWnd, &mMainWndClassName);
     }
     else if (CStringHasContents(mMainWndClassName.Get()))
@@ -1343,7 +1336,7 @@ bool IGraphicsWin::GetTextFromClipboard(WDL_String& str)
   return success;
 }
 
-BOOL IGraphicsWin::EnumResNameProc(HANDLE module, LPCTSTR type, LPTSTR name, LONG param)
+BOOL IGraphicsWin::EnumResNameProc(HANDLE module, LPCTSTR type, LPTSTR name, LONG_PTR param)
 {
   if (IS_INTRESOURCE(name)) return true; // integer resources not wanted
   else {
