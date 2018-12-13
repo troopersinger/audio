@@ -73,12 +73,7 @@ NSString* ToNSString(const char* cStr);
 @end
 
 @interface IGRAPHICS_VIEW : NSView <NSTextFieldDelegate/*, WKScriptMessageHandler*/>
-{
-#ifdef IGRAPHICS_GL
-  NSOpenGLContext* mContext;
-  NSOpenGLPixelFormat* mPixelFormat;
-#endif
-  
+{ 
   NSTimer* mTimer;
   NSTextField* mTextFieldView;
 //  WKWebView* mWebView;
@@ -87,7 +82,6 @@ NSString* ToNSString(const char* cStr);
 @public
   IGraphicsMac* mGraphics; // OBJC instance variables have to be pointers
 }
-//- (id) init;
 - (id) initWithIGraphics: (IGraphicsMac*) pGraphics;
 - (BOOL) isOpaque;
 - (BOOL) acceptsFirstResponder;
@@ -129,6 +123,13 @@ NSString* ToNSString(const char* cStr);
 - (BOOL) performDragOperation: (id<NSDraggingInfo>) sender;
 //
 - (void) setMouseCursor: (ECursor) cursor;
+@end
+
+@interface IGRAPHICS_GLLAYER : NSOpenGLLayer
+{
+  IGRAPHICS_VIEW* mView;
+}
+- (id) initWithIGraphicsView: (IGRAPHICS_VIEW*) pView;
 @end
 
 #endif //NO_IGRAPHICS

@@ -56,6 +56,7 @@ public:
 
   //IGraphicsMac
   void SetMousePosition(float x, float y);
+  void ViewReady();
 
 private:
   bool OSFindResource(const char* name, const char* type, WDL_String& result) override;

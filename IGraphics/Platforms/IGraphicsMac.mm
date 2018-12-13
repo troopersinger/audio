@@ -196,36 +196,41 @@ void* IGraphicsMac::OpenWindow(void* pParent)
   CloseWindow();
   mView = (IGRAPHICS_VIEW*) [[IGRAPHICS_VIEW alloc] initWithIGraphics: this];
   
+  if (pParent)
+    [(NSView*) pParent addSubview: (IGRAPHICS_VIEW*) mView];
+  
+#ifndef IGRAPHICS_GL
+  ViewReady();
+#endif
+  
+  return mView;
+}
+
+void IGraphicsMac::ViewReady()
+{
   IGRAPHICS_VIEW* pView = (IGRAPHICS_VIEW*) mView;
 
   OnViewInitialized([pView layer]);
   
   SetDisplayScale([[NSScreen mainScreen] backingScaleFactor]);
-    
+  
   GetDelegate()->LayoutUI(this);
-
-  if (pParent) // Cocoa VST host.
-  {
-    [(NSView*) pParent addSubview: (IGRAPHICS_VIEW*) mView];
-  }
-
+  
   UpdateTooltips();
-
-  return mView;
 }
 
 void IGraphicsMac::CloseWindow()
 {
   if (mView)
   {
-    IGRAPHICS_VIEW* view = (IGRAPHICS_VIEW*) mView;
-    [view removeAllToolTips];
-    [view killTimer];
+    IGRAPHICS_VIEW* pView = (IGRAPHICS_VIEW*) mView;
+    [pView removeAllToolTips];
+    [pView killTimer];
     mView = nullptr;
 
-    if (view->mGraphics)
+    if (pView->mGraphics)
     {
-      [view removeFromSuperview];   // Releases.
+      [pView removeFromSuperview];   // Releases.
     }
     
     OnViewDestroyed();

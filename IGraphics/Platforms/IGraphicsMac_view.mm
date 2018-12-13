@@ -277,48 +277,61 @@ inline int GetMouseOver(IGraphicsMac* pGraphics)
   
 #if defined IGRAPHICS_NANOVG
   #if defined IGRAPHICS_METAL
-    if (!self.wantsLayer) {
-      self.layer = [CAMetalLayer new];
-      self.layer.opaque = YES;
-      self.wantsLayer = YES;
-    }
+  if (!self.wantsLayer) {
+    self.layer = [CAMetalLayer new];
+    self.layer.opaque = YES;
+    self.wantsLayer = YES;
+  }
   #elif defined IGRAPHICS_GL
-    const NSOpenGLPixelFormatAttribute kAttributes[] =  {
-      NSOpenGLPFAAccelerated,
-      NSOpenGLPFANoRecovery,
-      NSOpenGLPFATripleBuffer,
-      NSOpenGLPFAAlphaSize, 8,
-      NSOpenGLPFAColorSize, 24,
-      NSOpenGLPFADepthSize, 0,
-      NSOpenGLPFAStencilSize, 8,
-      (NSOpenGLPixelFormatAttribute)0};
-    mPixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:kAttributes];
-    mContext = [[NSOpenGLContext alloc] initWithFormat:mPixelFormat
-                                          shareContext:nil];
+  if (!self.wantsLayer) {
+    self.layer.opaque = YES;
+    self.wantsLayer = YES;
+    
+  }
   
-    // Sets sync to VBL to eliminate tearing.
-    GLint vblSync = 1;
-    [mContext setValues:&vblSync forParameter:NSOpenGLCPSwapInterval];
-    // Allows for transparent background.
-//    GLint opaque = 0;
-//    [mContext setValues:&opaque forParameter:NSOpenGLCPSurfaceOpacity];
-//    [self setWantsBestResolutionOpenGLSurface:YES];
-    [mContext makeCurrentContext];
+  // Enable retina-support
+  self.wantsBestResolutionOpenGLSurface = YES;
+  
+//    const NSOpenGLPixelFormatAttribute kAttributes[] =  {
+//      NSOpenGLPFAAccelerated,
+//      NSOpenGLPFANoRecovery,
+//      NSOpenGLPFATripleBuffer,
+//      NSOpenGLPFAAlphaSize, 8,
+//      NSOpenGLPFAColorSize, 24,
+//      NSOpenGLPFADepthSize, 0,
+//      NSOpenGLPFAStencilSize, 8,
+//      (NSOpenGLPixelFormatAttribute)0};
+//    mPixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:kAttributes];
+//    mContext = [[NSOpenGLContext alloc] initWithFormat:mPixelFormat
+//                                          shareContext:nil];
+//
+//    // Sets sync to VBL to eliminate tearing.
+//    GLint vblSync = 1;
+//    [mContext setValues:&vblSync forParameter:NSOpenGLCPSwapInterval];
+//    // Allows for transparent background.
+////    GLint opaque = 0;
+////    [mContext setValues:&opaque forParameter:NSOpenGLCPSurfaceOpacity];
+////    [self setWantsBestResolutionOpenGLSurface:YES];
+//    [mContext makeCurrentContext];
   
   #endif
 #endif
 
   [self registerForDraggedTypes:[NSArray arrayWithObjects: NSFilenamesPboardType, nil]];
 
-  double sec = 1.0 / (double) pGraphics->FPS();
-  mTimer = [NSTimer timerWithTimeInterval:sec target:self selector:@selector(onTimer:) userInfo:nil repeats:YES];
-  [[NSRunLoop currentRunLoop] addTimer: mTimer forMode: (NSString*) kCFRunLoopCommonModes];
+//  double sec = 1.0 / (double) pGraphics->FPS();
+//  mTimer = [NSTimer timerWithTimeInterval:sec target:self selector:@selector(onTimer:) userInfo:nil repeats:YES];
+//  [[NSRunLoop currentRunLoop] addTimer: mTimer forMode: (NSString*) kCFRunLoopCommonModes];
 
   return self;
 }
 
 - (void)dealloc
 {
+//#ifdef IGRAPHICS_GL
+//  mContext = nil;
+//  mPixelFormat = nil;
+//#endif
   [[NSNotificationCenter defaultCenter] removeObserver:self];
   [super dealloc];
 }
@@ -352,8 +365,8 @@ inline int GetMouseOver(IGraphicsMac* pGraphics)
     [pWindow makeFirstResponder: self];
     [pWindow setAcceptsMouseMovedEvents: YES];
     
-    if (mGraphics)
-      mGraphics->SetDisplayScale([pWindow backingScaleFactor]);
+//    if (mGraphics)
+//      mGraphics->SetDisplayScale([pWindow backingScaleFactor]);
     
 //    [[NSNotificationCenter defaultCenter] addObserver:self
 //                                             selector:@selector(windowResized:) name:NSWindowDidEndLiveResizeNotification
@@ -378,8 +391,12 @@ inline int GetMouseOver(IGraphicsMac* pGraphics)
   
   CGFloat newScale = [pWindow backingScaleFactor];
   
-  if (newScale != mGraphics->GetDisplayScale())
-    mGraphics->SetDisplayScale(newScale);
+//  if (newScale != mGraphics->GetDisplayScale())
+//    mGraphics->SetDisplayScale(newScale);
+  
+//#ifdef IGRAPHICS_GL
+//  self.layer.contentsScale = self.window.backingScaleFactor;
+//#endif
 }
 
 // not called for opengl/metal
@@ -421,11 +438,11 @@ inline int GetMouseOver(IGraphicsMac* pGraphics)
 
 - (void) render
 {
-#ifdef IGRAPHICS_GL
-//  CGLLockContext([mContext CGLContextObj]);
-  [mContext setView:self];
-  [mContext makeCurrentContext];
-#endif
+//#ifdef IGRAPHICS_GL
+////  CGLLockContext([mContext CGLContextObj]);
+//  [mContext setView:self];
+//  [mContext makeCurrentContext];
+//#endif
   
   IRECTList rects;
   if (mGraphics->IsDirty(rects))
@@ -435,14 +452,14 @@ inline int GetMouseOver(IGraphicsMac* pGraphics)
     for (int i = 0; i < rects.Size(); i++)
     [self setNeedsDisplayInRect:ToNSRect(mGraphics, rects.Get(i))];
 #else
-    mGraphics->Draw(rects); // for metal/opengl drawRect is not called
+    mGraphics->Draw(rects);
 #endif
   }
   
-#ifdef IGRAPHICS_GL
-//  CGLLockContext([mContext CGLContextObj]);
-  [mContext flushBuffer];
-#endif
+//#ifdef IGRAPHICS_GL
+////  CGLLockContext([mContext CGLContextObj]);
+//  [mContext flushBuffer];
+//#endif
 }
 
 - (void) getMouseXY: (NSEvent*) pEvent x: (float*) pX y: (float*) pY
@@ -892,6 +909,88 @@ inline int GetMouseOver(IGraphicsMac* pGraphics)
 //  else // EUIResizerMode::kUIResizerSize
 //    mGraphics->Resize(mGraphics->Width(), mGraphics->Height(), Clip(std::min(scaleX, scaleY), 0.1f, 10.f));
 //}
+
+- (CALayer *)makeBackingLayer
+{
+  return [[[IGRAPHICS_GLLAYER alloc] initWithIGraphicsView: self] autorelease];
+}
+
+@end
+
+@implementation IGRAPHICS_GLLAYER
+
+- (id) initWithIGraphicsView: (IGRAPHICS_VIEW*) pView;
+{
+  mView = pView;
+  
+  self = [super init];
+  if ( self != nil )
+  {
+    self.needsDisplayOnBoundsChange = YES;
+    self.asynchronous = YES;
+  }
+  
+  return self;
+}
+
+- (NSOpenGLPixelFormat *)openGLPixelFormatForDisplayMask:(uint32_t)mask
+{
+  const NSOpenGLPixelFormatAttribute kAttributes[] =  {
+    NSOpenGLPFAAccelerated,
+    NSOpenGLPFANoRecovery,
+    NSOpenGLPFATripleBuffer,
+    NSOpenGLPFAAlphaSize, 8,
+    NSOpenGLPFAColorSize, 24,
+    NSOpenGLPFADepthSize, 0,
+    NSOpenGLPFAStencilSize, 8,
+#if defined IGRAPHICS_GL2
+    //    NSOpenGLProfileVersionLegacy,
+#elif defined IGRAPHICS_GL3
+    (NSOpenGLPixelFormatAttribute)NSOpenGLProfileVersion3_2Core,
+#endif
+    (NSOpenGLPixelFormatAttribute) 0
+    
+  };
+  
+  return [[NSOpenGLPixelFormat alloc] initWithAttributes:kAttributes];
+}
+
+- (BOOL)canDrawInOpenGLContext:(NSOpenGLContext *)context pixelFormat:(NSOpenGLPixelFormat *)pixelFormat forLayerTime:(CFTimeInterval)timeInterval displayTime:(const CVTimeStamp *)timeStamp
+{
+  static bool test = false;
+  
+  if(!test)
+  {
+    mView->mGraphics->ViewReady();
+    test = true;
+  }
+  
+  return YES;
+}
+
+- (void)drawInOpenGLContext:(NSOpenGLContext *)context pixelFormat:(NSOpenGLPixelFormat *)pixelFormat forLayerTime:(CFTimeInterval)timeInterval displayTime:(const CVTimeStamp *)timeStamp
+{
+  [context makeCurrentContext];
+  
+//  CGLLockContext(context.CGLContextObj);
+  
+  [mView render];
+//  glClearColor(.0f, .0f, .0f, 1.0f);
+//  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+//
+//  glEnableClientState(GL_VERTEX_ARRAY);
+//  glColor3f(1.0f, 0.85f, 0.35f);
+//  glBegin(GL_POLYGON);
+//  {
+//    glVertex3f(  0.0,  0.6, 0.0);
+//    glVertex3f( -0.2, -0.3, 0.0);
+//    glVertex3f(  0.2, -0.3 ,0.0);
+//  }
+//  glEnd();
+  
+  [context flushBuffer];
+//  CGLUnlockContext(context.CGLContextObj);
+}
 
 @end
 
