@@ -936,6 +936,11 @@ inline int GetMouseOver(IGraphicsMac* pGraphics)
   return [[[IGRAPHICS_GLLAYER alloc] initWithIGraphicsView: self] autorelease];
 }
 
+- (void) contextReady
+{
+  mGraphics->ViewReady();
+}
+
 @end
 
 @implementation IGRAPHICS_GLLAYER
@@ -943,6 +948,7 @@ inline int GetMouseOver(IGraphicsMac* pGraphics)
 - (id) initWithIGraphicsView: (IGRAPHICS_VIEW*) pView;
 {
   mView = pView;
+  mContextReady = NO;
   
   self = [super init];
   if ( self != nil )
@@ -978,12 +984,10 @@ inline int GetMouseOver(IGraphicsMac* pGraphics)
 
 - (BOOL)canDrawInOpenGLContext:(NSOpenGLContext *)context pixelFormat:(NSOpenGLPixelFormat *)pixelFormat forLayerTime:(CFTimeInterval)timeInterval displayTime:(const CVTimeStamp *)timeStamp
 {
-  static bool test = false;
-  
-  if(!test)
+  if(!mContextReady)
   {
-    mView->mGraphics->ViewReady();
-    test = true;
+    [mView contextReady];
+    mContextReady = YES;
   }
   
   return YES;

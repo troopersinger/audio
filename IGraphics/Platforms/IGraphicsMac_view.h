@@ -133,11 +133,13 @@ NSString* ToNSString(const char* cStr);
 - (BOOL) performDragOperation: (id<NSDraggingInfo>) sender;
 //
 - (void) setMouseCursor: (ECursor) cursor;
+- (void) contextReady;
 @end
 
 @interface IGRAPHICS_GLLAYER : NSOpenGLLayer
 {
   IGRAPHICS_VIEW* mView;
+  BOOL mContextReady;
 }
 - (id) initWithIGraphicsView: (IGRAPHICS_VIEW*) pView;
 @end
