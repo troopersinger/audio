@@ -1,18 +1,12 @@
 /*
  ==============================================================================
  
- This file is part of the iPlug 2 library
+ This file is part of the iPlug 2 library. Copyright (C) the iPlug 2 developers. 
  
- Oli Larkin et al. 2018 - https://www.olilarkin.co.uk
- 
- iPlug 2 is an open source library subject to commercial or open-source
- licensing.
- 
- The code included in this file is provided under the terms of the WDL license
- - https://www.cockos.com/wdl/
+ See LICENSE.txt for  more info.
  
  ==============================================================================
- */
+*/
 
 #include "IPlugPluginBase.h"
 #include "wdlendian.h"
@@ -111,7 +105,7 @@ void IPluginBase::OnParamChange(int paramIdx, EParamSource source, int sampleOff
 
 void IPluginBase::OnParamReset(EParamSource source)
 {
-  for (int i = 0; i < mParams.GetSize(); ++i)
+  for (int i = 0; i < NParams(); ++i)
   {
     OnParamChange(i, source);
   }
@@ -1201,8 +1195,7 @@ bool IPluginBase::LoadProgramFromVSTPreset(const char* path)
     IByteChunk::GetIPlugVerFromChunk(pgm, pos /* updates pos */);
     pos = UnserializeVST3CtrlrState(pgm, pos);
     
-//    DirtyParameters();
-//    RedrawParamControls();
+    DirtyParametersFromUI();
     OnRestoreState();
     
     return true;

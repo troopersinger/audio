@@ -1,3 +1,13 @@
+/*
+ ==============================================================================
+
+ This file is part of the iPlug 2 library. Copyright (C) the iPlug 2 developers.
+
+ See LICENSE.txt for  more info.
+
+ ==============================================================================
+*/
+
 #pragma once
 #include "IControl.h"
 #include "IPlugMidi.h"
@@ -193,11 +203,16 @@ public:
   {
     switch (msg.StatusMsg())
     {
-      case IMidiMsg::kNoteOn: SetNoteFromMidi(msg.NoteNumber(), true); break;
-      case IMidiMsg::kNoteOff: SetNoteFromMidi(msg.NoteNumber(), false); break;
+      case IMidiMsg::kNoteOn: 
+        SetNoteFromMidi(msg.NoteNumber(), (msg.Velocity() != 0));
+        break;
+      case IMidiMsg::kNoteOff: 
+        SetNoteFromMidi(msg.NoteNumber(), false);
+        break;
       case IMidiMsg::kControlChange:
         if(msg.ControlChangeIdx() == IMidiMsg::kAllNotesOff)
-          ClearNotesFromMidi(); break;
+          ClearNotesFromMidi();
+        break;
       default: break;
     }
     

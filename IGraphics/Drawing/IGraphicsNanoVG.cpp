@@ -1,3 +1,13 @@
+/*
+ ==============================================================================
+
+ This file is part of the iPlug 2 library. Copyright (C) the iPlug 2 developers.
+
+ See LICENSE.txt for  more info.
+
+ ==============================================================================
+*/
+
 #include <cmath>
 
 #include "IGraphicsNanoVG.h"
@@ -206,9 +216,10 @@ const char* IGraphicsNanoVG::GetDrawingAPIStr()
 #endif
 }
 
-IBitmap IGraphicsNanoVG::LoadBitmap(const char* name, int nStates, bool framesAreHorizontal)
+IBitmap IGraphicsNanoVG::LoadBitmap(const char* name, int nStates, bool framesAreHorizontal, int targetScale)
 {
-  const int targetScale = round(GetDisplayScale());
+  if(targetScale == 0)
+    targetScale = round(GetDisplayScale());
   
   APIBitmap* pAPIBitmap = mBitmapCache.Find(name, targetScale);
   
@@ -608,7 +619,36 @@ void IGraphicsNanoVG::SetClipRegion(const IRECT& r)
 
 void IGraphicsNanoVG::DrawDottedLine(const IColor& color, float x1, float y1, float x2, float y2, const IBlend* pBlend, float thickness, float dashLen)
 {
-  //TODO:
+  const float xd = x1 - x2;
+  const float yd = y1 - y2;
+  const float len = std::sqrt(xd * xd + yd * yd);
+  
+  const float segs = std::round(len / dashLen);
+  const float incr = 1.f / segs;
+
+  float xs = x1;
+  float ys = y1;
+
+  PathMoveTo(xs, ys);
+
+  for (int i = 1; i < static_cast<int>(segs); i+=2)
+  {
+    float progress = incr * static_cast<float>(i);
+  
+    float xe = x1 + progress * (x2 - x1);
+    float ye = y1 + progress * (y2 - y1);
+    
+    PathLineTo(xe, ye);
+    
+    progress += incr;
+    
+    xs = x1 + progress * (x2 - x1);;
+    ys = y1 + progress * (y2 - y1);
+    
+    PathMoveTo(xs, ys);
+  }
+  
+  PathStroke(color, thickness, IStrokeOptions(), pBlend);
 }
 
 void IGraphicsNanoVG::DrawDottedRect(const IColor& color, const IRECT& bounds, const IBlend* pBlend, float thickness, float dashLen)

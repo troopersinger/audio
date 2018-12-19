@@ -1,3 +1,13 @@
+/*
+ ==============================================================================
+
+ This file is part of the iPlug 2 library. Copyright (C) the iPlug 2 developers.
+
+ See LICENSE.txt for  more info.
+
+ ==============================================================================
+*/
+
 
 #include "IGraphics.h"
 
@@ -112,8 +122,6 @@ void IGraphics::Resize(int w, int h, float scale)
   if (mCornerResizer)
     mCornerResizer->OnRescale();
   
-  // TODO: Use natural resolution bitmaps where possible?
-
   GetDelegate()->ResizeGraphicsFromUI((int) (w * scale), (int) (h * scale), scale);
   PlatformResize();
 
@@ -810,6 +818,20 @@ void IGraphics::OnMouseUp(float x, float y, const IMouseMod& mod)
   {
     mResizingInProcess = false;
     mCornerResizer->OnMouseUp(x, y, mod);
+    
+    // if scaling up we may want to load in high DPI bitmaps if scale > 1.
+    if(GetResizerMode() == EUIResizerMode::kUIResizerScale)
+    {
+      int i, n = mControls.GetSize();
+      IControl** ppControl = mControls.GetList();
+      for (i = 0; i < n; ++i, ++ppControl)
+      {
+        (*ppControl)->OnRescale();
+      }
+      
+      SetAllControlsDirty();
+    }
+    
     return;
   }
   
@@ -1197,7 +1219,7 @@ void IGraphics::OnResizeGesture(float x, float y)
 
 IBitmap IGraphics::GetScaledBitmap(IBitmap& src)
 {
-  return LoadBitmap(src.GetResourceName().Get(), src.N(), src.GetFramesAreHorizontal());
+  return LoadBitmap(src.GetResourceName().Get(), src.N(), src.GetFramesAreHorizontal(), (GetDisplayScale() == 1. && GetScale() > 1.) ? 2 : 0);
 }
 
 void IGraphics::OnDrop(const char* str, float x, float y)
@@ -1272,9 +1294,10 @@ ISVG IGraphics::LoadSVG(const char* name)
   return ISVG(pHolder->mImage);
 }
 
-IBitmap IGraphics::LoadBitmap(const char* name, int nStates, bool framesAreHorizontal)
+IBitmap IGraphics::LoadBitmap(const char* name, int nStates, bool framesAreHorizontal, int targetScale)
 {
-  const int targetScale = round(GetDisplayScale());
+  if(targetScale == 0)
+    targetScale = round(GetDisplayScale());
 
   APIBitmap* pAPIBitmap = s_bitmapCache.Find(name, targetScale);
 
@@ -1380,7 +1403,6 @@ bool IGraphics::SearchImageResource(const char* name, const char* type, WDL_Stri
 APIBitmap* IGraphics::SearchBitmapInCache(const char* name, int targetScale, int& sourceScale)
 {
   // Search target scale, then descending
-
   for (sourceScale = targetScale; sourceScale > 0; SearchNextScale(sourceScale, targetScale))
   {
     APIBitmap* pBitmap = s_bitmapCache.Find(name, sourceScale);
