@@ -333,28 +333,29 @@ LRESULT CALLBACK IGraphicsWin::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
         return 0;
       }
     }
-
+    case WM_GETDLGCODE:
+      return DLGC_WANTALLKEYS;
     case WM_KEYDOWN:
     {
-      bool handle = true;
-      int key;
+      POINT p;
+      GetCursorPos(&p);
+      ScreenToClient(hWnd, &p);
 
-      if (wParam == VK_SPACE) key = KEY_SPACE;
-      else if (wParam == VK_UP) key = KEY_UPARROW;
-      else if (wParam == VK_DOWN) key = KEY_DOWNARROW;
-      else if (wParam == VK_LEFT) key = KEY_LEFTARROW;
-      else if (wParam == VK_RIGHT) key = KEY_RIGHTARROW;
-      else if (wParam >= '0' && wParam <= '9') key = KEY_DIGIT_0+wParam-'0';
-      else if (wParam >= 'A' && wParam <= 'Z') key = KEY_ALPHA_A+wParam-'A';
-      else if (wParam >= 'a' && wParam <= 'z') key = KEY_ALPHA_A+wParam-'a';
-      else handle = false;
+      BYTE keyboardState[256];
+      GetKeyboardState(keyboardState);
+      const int keyboardScanCode = (lParam >> 16) & 0x00ff;
+      WORD ascii = 0;
+      const int len = ToAscii(wParam, keyboardScanCode, keyboardState, &ascii, 0);
 
-      if (handle)
+      bool handle = false;
+
+      if (len == 1)
       {
-        POINT p;
-        GetCursorPos(&p);
-        ScreenToClient(hWnd, &p);
-        handle = pGraphics->OnKeyDown(p.x, p.y, key);
+        IKeyPress keyPress{ static_cast<char>(ascii), static_cast<int>(wParam), static_cast<bool>(GetKeyState(VK_SHIFT) & 0x8000),
+                                                                                static_cast<bool>(GetKeyState(VK_CONTROL) & 0x8000),
+                                                                                static_cast<bool>(GetKeyState(VK_MENU) & 0x8000) };
+
+        handle = pGraphics->OnKeyDown(p.x, p.y, keyPress);
       }
 
       if (!handle)
@@ -685,20 +686,20 @@ void IGraphicsWin::SetMouseCursor(ECursor cursor)
     
   switch (cursor)
   {
-    case ARROW:         cursorType = LoadCursor(NULL, IDC_ARROW);           break;
-    case IBEAM:         cursorType = LoadCursor(NULL, IDC_IBEAM);           break;
-    case WAIT:          cursorType = LoadCursor(NULL, IDC_WAIT);            break;
-    case CROSS:         cursorType = LoadCursor(NULL, IDC_CROSS);           break;
-    case UPARROW:       cursorType = LoadCursor(NULL, IDC_UPARROW);         break;
-    case SIZENWSE:      cursorType = LoadCursor(NULL, IDC_SIZENWSE);        break;
-    case SIZENESW:      cursorType = LoadCursor(NULL, IDC_SIZENESW);        break;
-    case SIZEWE:        cursorType = LoadCursor(NULL, IDC_SIZEWE);          break;
-    case SIZENS:        cursorType = LoadCursor(NULL, IDC_SIZENS);          break;
-    case SIZEALL:       cursorType = LoadCursor(NULL, IDC_SIZEALL);         break;
-    case INO:           cursorType = LoadCursor(NULL, IDC_NO);              break;
-    case HAND:          cursorType = LoadCursor(NULL, IDC_HAND);            break;
-    case APPSTARTING:   cursorType = LoadCursor(NULL, IDC_APPSTARTING);     break;
-    case HELP:          cursorType = LoadCursor(NULL, IDC_HELP);            break;
+    case ECursor::ARROW:            cursorType = LoadCursor(NULL, IDC_ARROW);           break;
+    case ECursor::IBEAM:            cursorType = LoadCursor(NULL, IDC_IBEAM);           break;
+    case ECursor::WAIT:             cursorType = LoadCursor(NULL, IDC_WAIT);            break;
+    case ECursor::CROSS:            cursorType = LoadCursor(NULL, IDC_CROSS);           break;
+    case ECursor::UPARROW:          cursorType = LoadCursor(NULL, IDC_UPARROW);         break;
+    case ECursor::SIZENWSE:         cursorType = LoadCursor(NULL, IDC_SIZENWSE);        break;
+    case ECursor::SIZENESW:         cursorType = LoadCursor(NULL, IDC_SIZENESW);        break;
+    case ECursor::SIZEWE:           cursorType = LoadCursor(NULL, IDC_SIZEWE);          break;
+    case ECursor::SIZENS:           cursorType = LoadCursor(NULL, IDC_SIZENS);          break;
+    case ECursor::SIZEALL:          cursorType = LoadCursor(NULL, IDC_SIZEALL);         break;
+    case ECursor::INO:              cursorType = LoadCursor(NULL, IDC_NO);              break;
+    case ECursor::HAND:             cursorType = LoadCursor(NULL, IDC_HAND);            break;
+    case ECursor::APPSTARTING:      cursorType = LoadCursor(NULL, IDC_APPSTARTING);     break;
+    case ECursor::HELP:             cursorType = LoadCursor(NULL, IDC_HELP);            break;
     default:
       cursorType = LoadCursor(NULL, IDC_ARROW);
   }
@@ -1060,6 +1061,8 @@ IPopupMenu* IGraphicsWin::CreatePlatformPopupMenu(IPopupMenu& menu, const IRECT&
 
     return result;
   }
+
+  return nullptr;
 }
 
 void IGraphicsWin::CreatePlatformTextEntry(IControl& control, const IText& text, const IRECT& bounds, const char* str)
@@ -1241,6 +1244,8 @@ void IGraphicsWin::PromptForFile(WDL_String& fileName, WDL_String& path, EFileAc
   {
     fileName.Set("");
   }
+
+  ReleaseMouseCapture();
 }
 
 void IGraphicsWin::PromptForDirectory(WDL_String& dir)
@@ -1273,6 +1278,8 @@ void IGraphicsWin::PromptForDirectory(WDL_String& dir)
   {
     dir.Set("");
   }
+
+  ReleaseMouseCapture();
   
   ::OleUninitialize();
 }

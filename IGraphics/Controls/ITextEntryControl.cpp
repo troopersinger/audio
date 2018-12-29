@@ -1,6 +1,10 @@
 #include "ITextEntryControl.h"
 #include "IPlugPlatform.h"
 
+#ifndef OS_WIN
+  #include "swell-types.h"
+#endif
+
 #define VIRTUAL_KEY_BIT 0x80000000
 #define STB_TEXTEDIT_K_SHIFT 0x40000000
 #define STB_TEXTEDIT_K_CONTROL 0x20000000
@@ -70,8 +74,10 @@ void ITextEntryControl::Draw(IGraphics& g)
   g.FillRect(mText.mTextEntryBGColor, mRECT);
   g.DrawText(mText, mEditString.Get(), mRECT);
   
+  //TODO: draw selection rect
+  
   if(mDrawCursor)
-    g.DrawVerticalLine(mText.mTextEntryFGColor, mRECT.GetVPadded(-2), 0.4);
+    g.DrawVerticalLine(mText.mTextEntryFGColor, mRECT.GetVPadded(-2.f), 0.4);
 }
 
 template<typename Proc>
@@ -93,7 +99,7 @@ void ITextEntryControl::OnMouseDown(float x, float y, const IMouseMod& mod)
 {
   if(!mRECT.Contains(x, y))
   {
-    DismissEdit();
+    CommitEdit();
     return;
   }
     
@@ -109,78 +115,68 @@ void ITextEntryControl::OnMouseDown(float x, float y, const IMouseMod& mod)
 
 bool ITextEntryControl::OnKeyDown(float x, float y, const IKeyPress& key)
 {
-  if (key.HasCtrlCMD())
+  if (key.C)
   {
-    switch (key.mVK)
+    switch (key.VK)
     {
       case 'A':
       {
-//        selectAll ();
+        //TODO: Select All
         return true;
       }
       case 'X':
       {
-//        if (doCut ())
-//          return true;
+        //TODO: Cut
         return false;
       }
       case 'C':
       {
-//        if (doCopy ())
-//          return true;
+        //TODO: Copy
         return false;
       }
       case 'V':
       {
-//        if (doPaste ())
-//          return true;
+        //TODO: Paste
         return false;
       }
     }
   }
   
-  STB_TEXTEDIT_KEYTYPE stbKey = key.mAscii;
+  STB_TEXTEDIT_KEYTYPE stbKey = key.Ascii;
   
-  if(key.HasVK())
+  switch (key.VK)
   {
-    switch (key.mVK)
+    case VK_SPACE: stbKey = VK_SPACE; break;
+    case VK_TAB: return false;
+    case VK_DELETE: stbKey = VK_DELETE; break;
+    case VK_BACK: stbKey = VK_BACK; break;
+    case VK_RETURN: CommitEdit(); break;
+    case VK_ESCAPE: DismissEdit(); break;
+    default:
     {
-      case VK_SPACE:
-      {
-        stbKey = VK_SPACE;
+      if(key.VK >= '0' && key.VK <= '9')
         break;
-      }
-      case VK_TAB:
-      {
-        return false;
-      }
-      case VK_ESCAPE:
-      {
-        stbKey = VK_ESCAPE;
+      if(key.VK >= VK_NUMPAD0 && key.VK <= VK_NUMPAD9)
         break;
-      }
-      default:
-      {
-//        stbKey = (key.mVK) | VIRTUAL_KEY_BIT;
+      if(key.VK >= 'A' && key.VK <= 'Z')
         break;
-      }
+      else
+      // TODO: need to shift correct bits for VK
+//        stbKey = (key.VK) | VIRTUAL_KEY_BIT;
+      break;
     }
   }
 
-  if (key.HasCtrlCMD())
+  if (key.C)
     stbKey |= STB_TEXTEDIT_K_CONTROL;
-  if (key.HasAlt())
+  if (key.A)
     stbKey |= STB_TEXTEDIT_K_ALT;
-  if (key.HasShift())
+  if (key.S)
     stbKey |= STB_TEXTEDIT_K_SHIFT;
   
   return CallSTB([&]() { stb_textedit_key(this, &mEditState, stbKey); }) ? true : false;
 }
 
-//  void OnMouseDrag(float x, float y, float dX, float dY, const IMouseMod& mod) override;
-//  void OnMouseOver(float x, float y, const IMouseMod& mod) override;
-//  void OnMouseOut() override;
-//  void OnMouseWheel(float x, float y, const IMouseMod& mod, float d) override;
 void ITextEntryControl::OnEndAnimation()
 {
   if(mEditing)
@@ -242,8 +238,7 @@ void ITextEntryControl::Layout(StbTexteditRow* row, ITextEntryControl* _this, in
     }
     case IText::kAlignCenter:
     {
-      row->x0 =
-      static_cast<float> ((_this->GetRECT().W() / 2.) - (textWidth / 2.));
+      row->x0 = static_cast<float> ((_this->GetRECT().W() / 2.) - (textWidth / 2.));
       row->x1 = row->x0 + textWidth;
       break;
     }
@@ -269,13 +264,17 @@ void ITextEntryControl::OnStateChanged()
 
 void ITextEntryControl::OnTextChange()
 {
+  //TODO:
 }
 
 void ITextEntryControl::FillCharWidthCache()
 {
+  //TODO:
 }
+
 void ITextEntryControl::CalcCursorSizes()
 {
+  //TODO:
 }
 
 float ITextEntryControl::GetCharWidth(char c, char pc)
@@ -307,4 +306,18 @@ void ITextEntryControl::CreateTextEntry(const IRECT& bounds, const IText& text, 
   mEditString.Set(str);
   SetDirty(false);
   mEditing = true;
+}
+
+void ITextEntryControl::DismissEdit()
+{
+  mEditing = false;
+  SetTargetAndDrawRECTs(IRECT());
+  GetUI()->SetAllControlsDirty();
+}
+
+void ITextEntryControl::CommitEdit()
+{
+  mEditing = false;
+  SetTargetAndDrawRECTs(IRECT());
+  GetUI()->SetAllControlsDirty();
 }

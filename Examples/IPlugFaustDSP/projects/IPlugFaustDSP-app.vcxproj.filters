@@ -47,7 +47,7 @@
     <ClCompile Include="..\..\..\IPlug\IPlugTimer.cpp">
       <Filter>IPlug</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\IPlug\Extras\MidiSynth.cpp">
+    <ClCompile Include="..\..\..\IPlug\Extras\Synth\MidiSynth.cpp">
       <Filter>IPlug\Extras</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\IPlug\APP\IPlugAPP.cpp">
@@ -84,6 +84,9 @@
       <Filter>IGraphics\Controls</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\IGraphics\Controls\IPopupMenuControl.cpp">
+      <Filter>IGraphics\Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\IGraphics\Controls\ITextEntryControl.cpp">
       <Filter>IGraphics\Controls</Filter>
     </ClCompile>
   </ItemGroup>
@@ -268,6 +271,9 @@
       <Filter>IGraphics\Controls</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\IGraphics\Controls\IVScopeControl.h">
+      <Filter>IGraphics\Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\IGraphics\Controls\ITextEntryControl.h">
       <Filter>IGraphics\Controls</Filter>
     </ClInclude>
   </ItemGroup>
