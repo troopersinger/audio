@@ -25,6 +25,10 @@
 #include "swell.h"
 #endif
 
+#if defined IGRAPHICS_IMGUI && defined IGRAPHICS_METAL
+#import <QuartzCore/QuartzCore.h>
+#endif
+
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
 
 int GetSystemVersion()
@@ -211,6 +215,14 @@ void* IGraphicsMac::OpenWindow(void* pParent)
   IGRAPHICS_VIEW* pView = (IGRAPHICS_VIEW*) mView;
 
   OnViewInitialized([pView layer]);
+  
+#if defined IGRAPHICS_IMGUI
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  ImGui::StyleColorsDark();
+  
+  ImGui_ImplMetal_Init([static_cast<CAMetalLayer*>([pView layer]) device]);
+#endif
   
   SetScreenScale([[NSScreen mainScreen] backingScaleFactor]);
     

@@ -64,6 +64,7 @@ EXTRAS_PATH = $(IPLUG_PATH)/Extras
 JSON11_PATH = $(DEPS_PATH)/Extras/json11
 YOGA_PATH = $(DEPS_PATH)/IGraphics/yoga/yoga
 PUGL_PATH = $(DEPS_PATH)/Extras/pugl
+IMGUI_PATH = $(DEPS_PATH)/Extras/imgui
 
 //faust is linked as a dynamic library
 FAUST_LIB_PATHS = $(BUILT_LIBS_LIB_PATH)
@@ -74,7 +75,8 @@ FAUST_LNK_FLAGS = $(BUILT_LIBS_LIB_PATH)/libfaust.dylib
 CIVETWEB_INC_PATHS = $(BUILT_LIBS_INC_PATH)
 CIVETWEB_LNK_FLAGS = $(BUILT_LIBS_LIB_PATH)/libcivetweb.a
 
-EXTRAS_INC_PATHS = $(EXTRAS_PATH) $(EXTRAS_PATH)Synth $(EXTRAS_PATH)/Faust $(EXTRAS_PATH)/OSC $(EXTRAS_PATH)/HIIR $(EXTRAS_PATH)/WebSocket $(CIVETWEB_PATH) $(JSON11_PATH) $(RTAUDIO_PATH) $(RTMIDI_PATH)
+
+EXTRAS_INC_PATHS = $($(EXTRAS_PATH) $(EXTRAS_PATH)Synth $(EXTRAS_PATH)/Faust $(EXTRAS_PATH)/OSC $(EXTRAS_PATH)/HIIR $(EXTRAS_PATH)/WebSocket $(CIVETWEB_PATH) $(JSON11_PATH) $(RTAUDIO_PATH) $(RTMIDI_PATH)
 
 // Plug-in SDK paths
 VST2_SDK = $(DEPS_PATH)/IPlug/VST2_SDK
@@ -84,6 +86,8 @@ REAPER_SDK = $(DEPS_PATH)/IPlug/Reaper
 
 // this build setting is included at the xcode project level, since we need all these include paths
 IPLUG_INC_PATHS = $(PROJECT_ROOT) $(WDL_PATH) $(SWELL_PATH) $(IPLUG_PATH) $(EXTRAS_INC_PATHS)
+
+IMGUI_INC_PATHS = $(IMGUI_PATH) $(IMGUI_PATH)/examples
 
 IGRAPHICS_PATH = $(ROOT)/IGraphics
 
