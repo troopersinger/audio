@@ -82,6 +82,12 @@
   typedef MNVGframebuffer NVGframebuffer;
 #endif
 
+#if defined IGRAPHICS_IMGUI
+  #if defined IGRAPHICS_GL
+  #elif defined IGRAPHICS_METAL
+  #endif
+#endif
+
 void nvgReadPixels(NVGcontext* pContext, int image, int x, int y, int width, int height, void* pData);
 
 class NanoVGBitmap : public APIBitmap
