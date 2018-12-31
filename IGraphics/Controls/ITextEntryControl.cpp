@@ -1,8 +1,28 @@
+/*
+ ==============================================================================
+ 
+ This file is part of the iPlug 2 library. Copyright (C) the iPlug 2 developers.
+ 
+ See LICENSE.txt for  more info.
+ 
+ ==============================================================================
+ */
+
+/**
+ * @file
+ * @brief ITextEntryControl implementation
+ * @ingroup SpecialControls
+*/
+
 #include "ITextEntryControl.h"
 #include "IPlugPlatform.h"
 
-#ifndef OS_WIN
-  #include "swell-types.h"
+#if !defined OS_WIN
+  #if defined OS_IOS
+    #include "swell-ios.h"
+  #else
+    #include "swell-types.h"
+  #endif
 #endif
 
 #define VIRTUAL_KEY_BIT 0x80000000
@@ -77,7 +97,7 @@ void ITextEntryControl::Draw(IGraphics& g)
   //TODO: draw selection rect
   
   if(mDrawCursor)
-    g.DrawVerticalLine(mText.mTextEntryFGColor, mRECT.GetVPadded(-2.f), 0.4);
+    g.DrawVerticalLine(mText.mTextEntryFGColor, mRECT.GetVPadded(-2.f), 0.4f);
 }
 
 template<typename Proc>

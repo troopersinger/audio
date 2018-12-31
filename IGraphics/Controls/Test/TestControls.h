@@ -8,6 +8,11 @@
  ==============================================================================
 */
 
+/**
+ * @file
+ * @brief Include all the test controls
+ */
+
 #include "TestArcControl.h"
 #include "TestDirBrowseControl.h"
 #include "TestGradientControl.h"
@@ -19,6 +24,7 @@
 #include "TestDrawContextControl.h"
 #include "TestSizeControl.h"
 #include "TestSVGControl.h"
+#include "TestImageControl.h"
 #include "TestBlendControl.h"
 #include "TestDropShadowControl.h"
 #include "TestCursorControl.h"
