@@ -8,8 +8,13 @@
  ==============================================================================
 */
 
-#include "IPopupMenuControl.h"
+/**
+ * @file
+ * @brief IPopupMenuControl implementation
+ * @ingroup SpecialControls
+ */
 
+#include "IPopupMenuControl.h"
 
 IPopupMenuControl::IPopupMenuControl(IGEditorDelegate& dlg, int paramIdx, IText text, IRECT collapsedBounds, IRECT expandedBounds)
 : IControl(dlg, collapsedBounds, paramIdx)
@@ -162,8 +167,11 @@ void IPopupMenuControl::OnMouseDown(float x, float y, const IMouseMod& mod)
 
 void IPopupMenuControl::OnMouseDrag(float x, float y, float dX, float dY, const IMouseMod& mod)
 {
-  mMouseCellBounds = mActiveMenuPanel->HitTestCells(x, y);
-  SetDirty(false);
+  if(mActiveMenuPanel)
+  {
+    mMouseCellBounds = mActiveMenuPanel->HitTestCells(x, y);
+    SetDirty(false);
+  }
 }
 
 void IPopupMenuControl::OnMouseOver(float x, float y, const IMouseMod& mod)
@@ -703,7 +711,7 @@ IPopupMenuControl::MenuPanel::MenuPanel(IPopupMenuControl& control, IPopupMenu& 
 
       for(auto i = 0; i < mCellBounds.GetSize(); i++)
       {
-        mCellBounds.Get(i)->Shift(-shiftLeft);
+        mCellBounds.Get(i)->Translate(-shiftLeft, 0.f);
       }
       
       control.mCalloutArrowDir = kWest;
@@ -716,7 +724,7 @@ IPopupMenuControl::MenuPanel::MenuPanel(IPopupMenuControl& control, IPopupMenu& 
       // shift all cell rects left
       for(auto i = 0; i < mCellBounds.GetSize(); i++)
       {
-        mCellBounds.Get(i)->Shift(-shiftLeft, 0, -shiftLeft, 0);
+        mCellBounds.Get(i)->Translate(-shiftLeft, 0.f);
       }
     }
     
