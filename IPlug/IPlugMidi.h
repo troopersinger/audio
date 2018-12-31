@@ -1,20 +1,21 @@
 /*
  ==============================================================================
  
- This file is part of the iPlug 2 library
+ This file is part of the iPlug 2 library. Copyright (C) the iPlug 2 developers. 
  
- Oli Larkin et al. 2018 - https://www.olilarkin.co.uk
- 
- iPlug 2 is an open source library subject to commercial or open-source
- licensing.
- 
- The code included in this file is provided under the terms of the WDL license
- - https://www.cockos.com/wdl/
+ See LICENSE.txt for  more info.
  
  ==============================================================================
- */
+*/
 
 #pragma once
+
+/**
+ * @file
+ * @brief MIDI and sysex structs/utilites
+ * @ingroup IPlugStructs
+ */
+
 #include <cassert>
 #include <cstdint>
 #include <cstdio>
@@ -22,7 +23,8 @@
 
 #include "IPlugLogger.h"
 
-/** Encapsulates a MIDI message and provides helper functions */
+/** Encapsulates a MIDI message and provides helper functions
+ * @ingroup IPlugStructs */
 struct IMidiMsg
 {
   int mOffset;
@@ -143,7 +145,7 @@ struct IMidiMsg
   }
   
   /** @param value range [-1, 1], converts to [0, 16384) where 8192 = no pitch change. */
-  void MakePitchWheelMsg(double value, int channel = 0)
+  void MakePitchWheelMsg(double value, int channel = 0, int offset = 0)
   {
     Clear();
     mStatus = channel | (kPitchWheel << 4);
@@ -151,15 +153,35 @@ struct IMidiMsg
     i = std::min(std::max(i, 0), 16383);
     mData2 = i>>7;
     mData1 = i&0x7F;
+    mOffset = offset;
   }
   
   /** @param value range [0, 1] */
-  void MakeControlChangeMsg(EControlChangeMsg idx, double value, int channel = 0)
+  void MakeControlChangeMsg(EControlChangeMsg idx, double value, int channel = 0, int offset = 0)
   {
     Clear();
     mStatus = channel | (kControlChange << 4);
     mData1 = idx;
     mData2 = (int) (value * 127.0);
+    mOffset = offset;
+  }
+  
+  void MakeChannelATMsg(int pressure, int offset, int channel)
+  {
+    Clear();
+    mStatus = channel | (kChannelAftertouch << 4);
+    mData1 = pressure;
+    mData2 = 0;
+    mOffset = offset;
+  }
+  
+  void MakePolyATMsg(int noteNumber, int pressure, int offset, int channel)
+  {
+    Clear();
+    mStatus = channel | (kPolyAftertouch << 4);
+    mData1 = noteNumber;
+    mData2 = pressure;
+    mOffset = offset;
   }
   
   /** @return [0, 15] for midi channels 1 ... 16 */
@@ -304,7 +326,8 @@ struct IMidiMsg
   }
 };
 
-/** A struct for dealing with SysEx messages. Does not own the data. */
+/** A struct for dealing with SysEx messages. Does not own the data.
+  * @ingroup IPlugStructs */
 struct ISysEx
 {
   int mOffset, mSize;
@@ -430,7 +453,8 @@ void MyPlug::ProcessBlock(double** inputs, double** outputs, int nFrames)
   #define DEFAULT_BLOCK_SIZE 512
 #endif
 
-/** A class to help with queuing timestamped MIDI messages */
+/** A class to help with queuing timestamped MIDI messages
+  * @ingroup IPlugUtilities */
 class IMidiQueue
 {
 public:
