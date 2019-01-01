@@ -430,13 +430,28 @@ void IGraphicsNanoVG::OnViewInitialized(void* pContext)
 #else
   mVG = nvgCreateContext(flags);
 #endif
-  
+
+#ifdef IGRAPHICS_IMGUI
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  ImGuiIO& io = ImGui::GetIO();
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
+  ImGui::StyleColorsDark();
+  ImGui_ImplWin32_Init(WindowFromDC((HDC)pContext));
+  ImGui_ImplOpenGL2_Init();
+#endif
+
   if (mVG == nullptr)
     DBGMSG("Could not init nanovg.\n");
 }
 
 void IGraphicsNanoVG::OnViewDestroyed()
 {
+#ifdef IGRAPHICS_IMGUI
+  ImGui_ImplWin32_Shutdown();
+  ImGui_ImplOpenGL2_Shutdown();
+  ImGui::DestroyContext();
+#endif
   // need to remove all the controls to free framebuffers, before deleting context
   RemoveAllControls();
 
@@ -474,6 +489,17 @@ void IGraphicsNanoVG::DrawResize()
 
 void IGraphicsNanoVG::BeginFrame()
 {
+#ifdef IGRAPHICS_IMGUI
+  ImGui_ImplOpenGL2_NewFrame();
+  ImGui_ImplWin32_NewFrame();
+  ImGui::NewFrame();
+
+  if(mIMGUIFunc)
+    mIMGUIFunc(this);
+
+  ImGui::Render();
+#endif
+
   IGraphics::BeginFrame(); // start perf graph timing
 
 #ifdef IGRAPHICS_METAL
@@ -513,6 +539,10 @@ void IGraphicsNanoVG::EndFrame()
   
   nvgEndFrame(mVG);
 
+#ifdef IGRAPHICS_IMGUI
+  ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
+#endif
+
 #if defined OS_WEB
   glEnable(GL_DEPTH_TEST);
 #endif
@@ -525,7 +555,6 @@ void IGraphicsNanoVG::DrawBitmap(IBitmap& bitmap, const IRECT& dest, int srcX, i
   assert(pAPIBitmap);
     
   // First generate a scaled image paint
-    
   NVGpaint imgPaint;
   double scale = 1.0 / (pAPIBitmap->GetScale() * pAPIBitmap->GetDrawScale());
 

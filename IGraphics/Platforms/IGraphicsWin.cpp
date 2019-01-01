@@ -115,6 +115,8 @@ void IGraphicsWin::CheckTabletInput(UINT msg)
   }
 }
 
+extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
 // static
 LRESULT CALLBACK IGraphicsWin::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -137,6 +139,12 @@ LRESULT CALLBACK IGraphicsWin::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
   {
     return DefWindowProc(hWnd, msg, wParam, lParam);
   }
+
+#ifdef IGRAPHICS_IMGUI
+  if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam))
+    return true;
+#endif
+
   if (pGraphics->mParamEditWnd && pGraphics->mParamEditMsg == kEditing)
   {
     if (msg == WM_RBUTTONDOWN || (msg == WM_LBUTTONDOWN))
@@ -230,6 +238,12 @@ LRESULT CALLBACK IGraphicsWin::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
           {
             UpdateWindow(hWnd);
           }
+        }
+
+        if (pGraphics->GetIMGUIFunc())
+        {
+          RECT r { 0, 0, 1, 1 };
+          InvalidateRect(hWnd, &r, FALSE);
         }
       }
       return 0;
