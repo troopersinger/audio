@@ -6,60 +6,44 @@
 
 #if defined IGRAPHICS_METAL
 #import <Metal/Metal.h>
+#import <QuartzCore/QuartzCore.h>
 
-@interface ImGuiRenderer ()
-@property (nonatomic, strong) id <MTLCommandQueue> commandQueue;
-@end
-
-@implementation ImGuiRenderer
-
-- (id) initWithIGraphics: (IGraphicsMac*) pGraphics
+ImGuiRenderer::ImGuiRenderer(IGraphics* pGraphics)
+: mGraphics(pGraphics)
 {
-  self = [super init];
- 
-  if(self)
-  {
-    mGraphics = pGraphics;
+  id<MTLDevice> device = MTLCreateSystemDefaultDevice();
 
-    id<MTLDevice> device = MTLCreateSystemDefaultDevice();
+  mCommandQueue = [device newCommandQueue];
 
-    _commandQueue = [device newCommandQueue];
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
 
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    
-    //TODO lamda init
-    ImGui::StyleColorsDark();
+  //TODO lamda init
+  ImGui::StyleColorsDark();
 
-    ImGui_ImplMetal_Init(device);
-  }
-  
-  return self;
+  ImGui_ImplMetal_Init(device);
 }
 
-- (void)render:(NSView*) view;
+void ImGuiRenderer::Render()
 {
+  NSView* pView = (NSView*) mGraphics->GetWindow();
+  CAMetalLayer* pLayer = (CAMetalLayer*) [pView layer];
+
   ImGuiIO &io = ImGui::GetIO();
-  io.DisplaySize.x = view.bounds.size.width;
-  io.DisplaySize.y = view.bounds.size.height;
+  io.DisplaySize.x = mGraphics->WindowWidth();
+  io.DisplaySize.y = mGraphics->WindowHeight();
+  io.DisplayFramebufferScale = ImVec2(mGraphics->GetScreenScale(), mGraphics->GetScreenScale());
+  io.DeltaTime = 1.f / mGraphics->FPS();
 
-#if defined OS_MAC
-  CGFloat framebufferScale = view.window.screen.backingScaleFactor ?: NSScreen.mainScreen.backingScaleFactor;
-#elif defined OS_IOS
-  CGFloat framebufferScale = view.window.screen.scale ?: UIScreen.mainScreen.scale;
-#endif
-  io.DisplayFramebufferScale = ImVec2(framebufferScale, framebufferScale);
-
-  io.DeltaTime = 1 / 60.;//float(view.preferredFramesPerSecond ?: 60);
-
-  id<MTLCommandBuffer> commandBuffer = [self.commandQueue commandBuffer];
-
+  id<MTLCommandBuffer> commandBuffer = [(id) mCommandQueue commandBuffer];
   static bool show_demo_window = true;
-  
+
+  id<CAMetalDrawable> drawable = [pLayer nextDrawable];
+
   MTLRenderPassDescriptor* descriptor = [MTLRenderPassDescriptor renderPassDescriptor];
-  
-  descriptor.colorAttachments[0].clearColor = MTLClearColorMake(0.f, 0.f, 0.f, 0.f);
-  descriptor.colorAttachments[0].loadAction = MTLLoadActionLoad;
+  descriptor.colorAttachments[0].texture = [drawable texture];
+  descriptor.colorAttachments[0].clearColor = MTLClearColorMake(1.f, 1.f, 1.f, 1.f);
+  descriptor.colorAttachments[0].loadAction = MTLLoadActionLoad; //
   descriptor.colorAttachments[0].storeAction = MTLStoreActionStore;
 
   if (descriptor != nil)
@@ -84,15 +68,11 @@
     [renderEncoder popDebugGroup];
     [renderEncoder endEncoding];
 
-//        [commandBuffer presentDrawable:view.currentDrawable];
+    [commandBuffer presentDrawable:drawable];
   }
 
   [commandBuffer commit];
 }
-
-@end
-
-#include "imgui_impl_metal.mm"
 
 #endif
 

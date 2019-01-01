@@ -298,7 +298,7 @@ inline int GetMouseOver(IGraphicsMac* pGraphics)
 #endif
   
 #ifdef IGRAPHICS_IMGUI
-  mImGuiRenderer = [[[ImGuiRenderer alloc] initWithIGraphics:pGraphics] retain];
+  mImGuiRenderer = new ImGuiRenderer(pGraphics);
 #endif
   
   [self registerForDraggedTypes:[NSArray arrayWithObjects: NSFilenamesPboardType, nil]];
@@ -312,6 +312,8 @@ inline int GetMouseOver(IGraphicsMac* pGraphics)
 
 - (void)dealloc
 {
+  delete mImGuiRenderer;
+  
   [[NSNotificationCenter defaultCenter] removeObserver:self];
   [super dealloc];
 }
@@ -423,8 +425,7 @@ inline int GetMouseOver(IGraphicsMac* pGraphics)
   }
   
 #if defined IGRAPHICS_IMGUI
-  if(mGraphics)
-    [mImGuiRenderer render:self];
+  mImGuiRenderer->Render();
 #endif
 }
 

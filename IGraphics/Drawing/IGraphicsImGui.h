@@ -3,7 +3,7 @@
 #if defined IGRAPHICS_IMGUI
 
 #include "imgui.h"
-#include "IGraphicsMac.h"
+#include "IGraphics.h"
 
 #if defined IGRAPHICS_GL
   #if defined IGRAPHICS_GL2
@@ -15,11 +15,14 @@
   #include "imgui_impl_metal.h"
 #endif
 
-@interface ImGuiRenderer : NSObject
+class ImGuiRenderer
 {
-  IGraphicsMac* mGraphics;
-}
-- (id) initWithIGraphics: (IGraphicsMac*) pGraphics;
-- (void) render:(NSView*) view;
-@end
+public:
+  ImGuiRenderer(IGraphics* pGraphics);
+  
+  void Render();
+private:
+  IGraphics* mGraphics;
+  void* mCommandQueue;
+};
 #endif
