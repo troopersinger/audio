@@ -20,19 +20,7 @@
 //#include <OpenGL/gl.h>
 #endif
 
-#if defined IGRAPHICS_IMGUI
-  #include "imgui.h"
-  #if defined IGRAPHICS_GL
-    #if defined IGRAPHICS_GL2
-      #include "imgui_impl_opengl2.h"
-    #elif defined IGRAPHICS_GL3
-      #include "imgui_impl_opengl3.h"
-    #endif
-  #elif defined IGRAPHICS_METAL
-    #include "imgui_impl_metal.h"
-  #endif
-#endif
-
+#import "IGraphicsImGui.h"
 
 inline NSRect ToNSRect(IGraphics* pGraphics, const IRECT& bounds)
 {
@@ -106,6 +94,10 @@ NSString* ToNSString(const char* cStr);
   float mPrevX, mPrevY;
 @public
   IGraphicsMac* mGraphics; // OBJC instance variables have to be pointers
+
+#ifdef IGRAPHICS_IMGUI
+  ImGuiRenderer* mImGuiRenderer;
+#endif
 }
 //- (id) init;
 - (id) initWithIGraphics: (IGraphicsMac*) pGraphics;
