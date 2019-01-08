@@ -44,6 +44,10 @@
   #error you must define either IGRAPHICS_GL2, IGRAPHICS_GLES2 etc or IGRAPHICS_METAL when using IGRAPHICS_NANOVG
 #endif
 
+#ifdef IGRAPHICS_IMGUI
+  #include "IGraphicsImGui.h"
+#endif
+
 #ifdef IGRAPHICS_GL
   #define NANOVG_FBO_VALID 1
   #include "nanovg_gl_utils.h"
@@ -172,6 +176,10 @@ private:
   StaticStorage<APIBitmap> mBitmapCache; //not actually static (doesn't require retaining or releasing)
   NVGcontext* mVG = nullptr;
   NVGframebuffer* mMainFrameBuffer = nullptr;
+  
+#ifdef IGRAPHICS_IMGUI
+  ImGuiRenderer* mImGuiRenderer = nullptr;
+#endif
     
 #if defined OS_WIN
   HGLRC mHGLRC = nullptr;

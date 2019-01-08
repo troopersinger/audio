@@ -433,13 +433,7 @@ void IGraphicsNanoVG::OnViewInitialized(void* pContext)
 #endif
 
 #ifdef IGRAPHICS_IMGUI
-  IMGUI_CHECKVERSION();
-  ImGui::CreateContext();
-  ImGuiIO& io = ImGui::GetIO();
-  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
-  ImGui::StyleColorsDark();
-  ImGui_ImplWin32_Init(WindowFromDC((HDC)pContext));
-  ImGui_ImplOpenGL2_Init();
+  mImGuiRenderer = new ImGuiRenderer(pContext, this);
 #endif
 
   if (mVG == nullptr)
@@ -449,9 +443,8 @@ void IGraphicsNanoVG::OnViewInitialized(void* pContext)
 void IGraphicsNanoVG::OnViewDestroyed()
 {
 #ifdef IGRAPHICS_IMGUI
-  ImGui_ImplWin32_Shutdown();
-  ImGui_ImplOpenGL2_Shutdown();
-  ImGui::DestroyContext();
+  if(mImGuiRenderer)
+    DELETE_NULL(mImGuiRenderer);
 #endif
   // need to remove all the controls to free framebuffers, before deleting context
   // need to free framebuffers, before deleting context
@@ -494,17 +487,6 @@ void IGraphicsNanoVG::DrawResize()
 
 void IGraphicsNanoVG::BeginFrame()
 {
-#ifdef IGRAPHICS_IMGUI
-  ImGui_ImplOpenGL2_NewFrame();
-  ImGui_ImplWin32_NewFrame();
-  ImGui::NewFrame();
-
-  if(mIMGUIFunc)
-    mIMGUIFunc(this);
-
-  ImGui::Render();
-#endif
-
   IGraphics::BeginFrame(); // start perf graph timing
 
 #ifdef IGRAPHICS_METAL
@@ -521,6 +503,10 @@ void IGraphicsNanoVG::BeginFrame()
   #endif
 #endif
   
+#ifdef IGRAPHICS_IMGUI
+  mImGuiRenderer->BeginFrame();
+#endif
+
   nvgBindFramebuffer(mMainFrameBuffer); // begin main frame buffer update
   nvgBeginFrame(mVG, WindowWidth(), WindowHeight(), GetScreenScale());
 }
@@ -529,11 +515,11 @@ void IGraphicsNanoVG::EndFrame()
 {
   nvgEndFrame(mVG); // end main frame buffer update
   nvgBindFramebuffer(nullptr);
-  
+
   nvgBeginFrame(mVG, WindowWidth(), WindowHeight(), GetScreenScale());
 
   NVGpaint img = nvgImagePattern(mVG, 0, 0, WindowWidth(), WindowHeight(), 0, mMainFrameBuffer->image, 1.0f);
-  
+
   nvgSave(mVG);
   nvgResetTransform(mVG);
   nvgBeginPath(mVG);
@@ -541,13 +527,13 @@ void IGraphicsNanoVG::EndFrame()
   nvgFillPaint(mVG, img);
   nvgFill(mVG);
   nvgRestore(mVG);
-  
+
   nvgEndFrame(mVG);
 
 #ifdef IGRAPHICS_IMGUI
-  ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
+  mImGuiRenderer->EndFrame();
 #endif
-
+  
 #if defined OS_WEB
   glEnable(GL_DEPTH_TEST);
 #endif

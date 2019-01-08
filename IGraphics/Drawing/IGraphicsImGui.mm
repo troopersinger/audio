@@ -2,78 +2,98 @@
 
 #if defined IGRAPHICS_IMGUI
 
-#import "IGraphicsImGui.h"
+#include "IGraphicsImGui.h"
+#include "IGraphicsNanoVG.h"
 
-#if defined IGRAPHICS_METAL
-#import <Metal/Metal.h>
-#import <QuartzCore/QuartzCore.h>
+#if defined IGRAPHICS_GL2
+  #include "imgui_impl_opengl2.h"
+#elif defined IGRAPHICS_GL3
+  #include "imgui_impl_opengl3.h"
+#elif defined IGRAPHICS_METAL
+  #import <Metal/Metal.h>
+  #import <QuartzCore/QuartzCore.h>
+  #include "imgui_impl_metal.h"
+#endif
 
-ImGuiRenderer::ImGuiRenderer(IGraphics* pGraphics)
+ImGuiRenderer::ImGuiRenderer(void* pContext, IGraphicsNanoVG* pGraphics)
 : mGraphics(pGraphics)
+, mMTLLayer(pContext)
 {
-  id<MTLDevice> device = MTLCreateSystemDefaultDevice();
-
-  mCommandQueue = [device newCommandQueue];
-
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
-
-  //TODO lamda init
+  ImGuiIO& io = ImGui::GetIO();
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
   ImGui::StyleColorsDark();
-
-  ImGui_ImplMetal_Init(device);
+  
+#if defined IGRAPHICS_GL2
+  ImGui_ImplOpenGL2_Init();
+#elif defined IGRAPHICS_METAL
+  ImGui_ImplMetal_Init(id<MTLDevice> (mnvgDevice((NVGcontext*) mGraphics->GetDrawContext())));
+#endif
 }
 
-void ImGuiRenderer::Render()
+ImGuiRenderer::~ImGuiRenderer()
 {
-  NSView* pView = (NSView*) mGraphics->GetWindow();
-  CAMetalLayer* pLayer = (CAMetalLayer*) [pView layer];
+#ifdef IGRAPHICS_GL2
+  ImGui_ImplOpenGL2_Shutdown();
+#elif defined IGRAPHICS_METAL
+  ImGui_ImplMetal_Shutdown();
+#endif
+  
+  ImGui::DestroyContext();
+}
+
+void ImGuiRenderer::BeginFrame()
+{
+#if defined IGRAPHICS_GL2
+  ImGui_ImplOpenGL2_NewFrame();
+#elif defined IGRAPHICS_METAL
+//  id<MTLCommandBuffer> commandBuffer = [(id) mnvgCommandQueue((NVGcontext*) mGraphics->GetDrawContext()) commandBuffer];
+//
+//  id<CAMetalDrawable> drawable = [(CAMetalLayer*) mMTLLayer nextDrawable];
+//
+//  MTLRenderPassDescriptor* pDesc = [MTLRenderPassDescriptor renderPassDescriptor];
+//  pDesc.colorAttachments[0].texture = [drawable texture];
+//  pDesc.colorAttachments[0].clearColor = MTLClearColorMake(1.f, 1.f, 1.f, 1.f);
+//  pDesc.colorAttachments[0].loadAction = MTLLoadActionLoad; //
+//  pDesc.colorAttachments[0].storeAction = MTLStoreActionStore;
+//
+//  id <MTLRenderCommandEncoder> renderEncoder = [commandBuffer renderCommandEncoderWithDescriptor:pDesc];
+//  mRenderEncoder = (void*) renderEncoder;
+//
+//  [renderEncoder pushDebugGroup:@"ImGui"];
+//  ImGui_ImplMetal_NewFrame(pDesc);
+#endif
 
   ImGuiIO &io = ImGui::GetIO();
+  io.ConfigFlags = 0; // disable kb
   io.DisplaySize.x = mGraphics->WindowWidth();
   io.DisplaySize.y = mGraphics->WindowHeight();
-  io.DisplayFramebufferScale = ImVec2(mGraphics->GetScreenScale(), mGraphics->GetScreenScale());
+  int scale = mGraphics->GetScreenScale();
+  io.DisplayFramebufferScale = ImVec2(scale, scale);
   io.DeltaTime = 1.f / mGraphics->FPS();
-
-  id<MTLCommandBuffer> commandBuffer = [(id) mCommandQueue commandBuffer];
-  static bool show_demo_window = true;
-
-  id<CAMetalDrawable> drawable = [pLayer nextDrawable];
-
-  MTLRenderPassDescriptor* descriptor = [MTLRenderPassDescriptor renderPassDescriptor];
-  descriptor.colorAttachments[0].texture = [drawable texture];
-  descriptor.colorAttachments[0].clearColor = MTLClearColorMake(1.f, 1.f, 1.f, 1.f);
-  descriptor.colorAttachments[0].loadAction = MTLLoadActionLoad; //
-  descriptor.colorAttachments[0].storeAction = MTLStoreActionStore;
-
-  if (descriptor != nil)
-  {
-    id <MTLRenderCommandEncoder> renderEncoder = [commandBuffer renderCommandEncoderWithDescriptor:descriptor];
-    [renderEncoder pushDebugGroup:@"ImGui"];
-
-    // Start the Dear ImGui frame
-    ImGui_ImplMetal_NewFrame(descriptor);
-//      ImGui_ImplOSX_NewFrame(view);
-    ImGui::NewFrame();
-
-    // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-    if (show_demo_window)
-      ImGui::ShowDemoWindow(&show_demo_window);
-
-    // Rendering
-    ImGui::Render();
-    ImDrawData *drawData = ImGui::GetDrawData();
-    ImGui_ImplMetal_RenderDrawData(drawData, commandBuffer, renderEncoder);
-
-    [renderEncoder popDebugGroup];
-    [renderEncoder endEncoding];
-
-    [commandBuffer presentDrawable:drawable];
-  }
-
-  [commandBuffer commit];
+  ImGui::NewFrame();
+  
+  if(mGraphics->GetIMGUIFunc())
+    mGraphics->GetIMGUIFunc()(mGraphics);
+  
+  ImGui::Render();
 }
 
+void ImGuiRenderer::EndFrame()
+{
+#if defined IGRAPHICS_GL2
+  ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
+#elif defined IGRAPHICS_METAL
+//  id<MTLCommandBuffer> commandBuffer = [(id) mnvgCommandQueue((NVGcontext*) mGraphics->GetDrawContext()) commandBuffer];
+//  id <MTLRenderCommandEncoder> renderEncoder = (id <MTLRenderCommandEncoder>) mRenderEncoder;
+//  ImGui_ImplMetal_RenderDrawData(ImGui::GetDrawData(), commandBuffer, renderEncoder);
+//  [renderEncoder popDebugGroup];
+//  [renderEncoder endEncoding];
+//  id<CAMetalDrawable> drawable = [(CAMetalLayer*) mMTLLayer nextDrawable];
+//  [commandBuffer presentDrawable:drawable];
+//  [commandBuffer commit];
 #endif
+}
 
 #endif
