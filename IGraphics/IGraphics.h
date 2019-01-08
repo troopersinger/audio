@@ -774,7 +774,11 @@ public:
   void AttachPopupMenuControl(const IText& text = DEFAULT_TEXT, const IRECT& bounds = IRECT());
   
   void SetKeyHandlerFunc(std::function<bool(const IKeyPress& key)> keyHandlerFunc) { mKeyHandlerFunc = keyHandlerFunc; }
-  
+
+  void SetIMGUIFunc(std::function<void(IGraphics*)> imguiFunc) { mIMGUIFunc = imguiFunc; }
+
+  std::function<void(IGraphics*)> GetIMGUIFunc() { return mIMGUIFunc; }
+
   /** Shows a control to display the frame rate of drawing
    * @param enable \c true to show */
   void ShowFPSDisplay(bool enable);
@@ -1113,9 +1117,10 @@ private:
   double mPrevTimestamp = 0.;
   std::function<bool(const IKeyPress& key)> mKeyHandlerFunc = nullptr;
 protected:
+  std::function<void(IGraphics*)> mIMGUIFunc = nullptr;
+
   friend class IGraphicsLiveEdit;
   friend class ICornerResizerControl;
   
   std::stack<ILayer*> mLayers;
 };
-
