@@ -6,6 +6,8 @@
 #include "IGraphicsImGui.h"
 #include "IGraphicsNanoVG.h"
 
+#include "imgui_impl_win32.h"
+
 #if defined IGRAPHICS_GL2
   #include "imgui_impl_opengl2.h"
 #elif defined IGRAPHICS_GL3

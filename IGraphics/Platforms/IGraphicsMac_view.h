@@ -20,8 +20,6 @@
 //#include <OpenGL/gl.h>
 #endif
 
-#import "IGraphicsImGui.h"
-
 inline NSRect ToNSRect(IGraphics* pGraphics, const IRECT& bounds)
 {
   float scale = pGraphics->GetDrawScale();
@@ -95,10 +93,6 @@ NSString* ToNSString(const char* cStr);
   float mPrevX, mPrevY;
 @public
   IGraphicsMac* mGraphics; // OBJC instance variables have to be pointers
-
-#ifdef IGRAPHICS_IMGUI
-  ImGuiRenderer* mImGuiRenderer;
-#endif
 }
 //- (id) init;
 - (id) initWithIGraphics: (IGraphicsMac*) pGraphics;

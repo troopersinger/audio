@@ -297,10 +297,6 @@ inline int GetMouseOver(IGraphicsMac* pGraphics)
   #endif
 #endif
   
-#ifdef IGRAPHICS_IMGUI
-  mImGuiRenderer = new ImGuiRenderer(pGraphics);
-#endif
-  
   [self registerForDraggedTypes:[NSArray arrayWithObjects: NSFilenamesPboardType, nil]];
 
   double sec = 1.0 / (double) pGraphics->FPS();
@@ -311,9 +307,7 @@ inline int GetMouseOver(IGraphicsMac* pGraphics)
 }
 
 - (void)dealloc
-{
-  delete mImGuiRenderer;
-  
+{  
   [mMoveCursor release];
   [[NSNotificationCenter defaultCenter] removeObserver:self];
   [super dealloc];
@@ -424,10 +418,6 @@ inline int GetMouseOver(IGraphicsMac* pGraphics)
     mGraphics->Draw(rects);
 #endif
   }
-  
-#if defined IGRAPHICS_IMGUI
-  mImGuiRenderer->Render();
-#endif
 }
 
 - (void) getMouseXY: (NSEvent*) pEvent x: (float&) pX y: (float&) pY
