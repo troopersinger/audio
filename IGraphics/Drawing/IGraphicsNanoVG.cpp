@@ -447,7 +447,6 @@ void IGraphicsNanoVG::OnViewDestroyed()
     DELETE_NULL(mImGuiRenderer);
 #endif
   // need to remove all the controls to free framebuffers, before deleting context
-  // need to free framebuffers, before deleting context
   RemoveAllControls();
 
   StaticStorage<APIBitmap>::Accessor storage(mBitmapCache);
