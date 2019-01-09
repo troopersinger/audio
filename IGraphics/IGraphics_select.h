@@ -37,5 +37,3 @@
 #if defined IGRAPHICS_IMGUI
   #include "imgui.h"
 #endif
-
-#endif
