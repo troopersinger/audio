@@ -239,12 +239,6 @@ LRESULT CALLBACK IGraphicsWin::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
             UpdateWindow(hWnd);
           }
         }
-
-        if (pGraphics->GetIMGUIFunc())
-        {
-          RECT r { 0, 0, 1, 1 };
-          InvalidateRect(hWnd, &r, FALSE);
-        }
       }
       return 0;
     }

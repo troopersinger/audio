@@ -46,6 +46,9 @@
 
 #ifdef IGRAPHICS_IMGUI
   #include "IGraphicsImGui.h"
+#ifdef OS_WIN
+  #pragma comment(lib, "imgui.lib")
+#endif
 #endif
 
 #ifdef IGRAPHICS_GL
