@@ -82,6 +82,8 @@ void ImGuiRenderer::EndFrame()
 #endif
 }
 
+#include "imgui_impl_win32.cpp"
+
 #endif // OS_WIN
 
 #include "imgui.cpp"

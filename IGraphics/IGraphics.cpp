@@ -639,6 +639,14 @@ bool IGraphics::IsDirty(IRECTList& rects)
   }
 #endif
 
+  #ifdef IGRAPHICS_IMGUI
+  if (GetIMGUIFunc())
+  {
+    rects.Add(GetBounds());
+    return true;
+  }
+  #endif
+
   return dirty;
 }
 
