@@ -717,6 +717,8 @@ public:
   /** Enables strict drawing mode. \todo explain strict drawing
    * @param strict Set /true to enable strict drawing mode */
   void SetStrictDrawing(bool strict);
+  
+  void SetLayoutOnResize(bool layoutOnResize);
 
   /** Gets the width of the graphics context
    * @return A whole number representing the width of the graphics context in pixels on a 1:1 screen */
@@ -783,9 +785,7 @@ public:
   
   /** @return \c true if performance display is shown */
   bool ShowingFPSDisplay() { return mPerfDisplay != nullptr; }
-  /** Attach a control for displaying the FPS on top of the UI */
-  void AttachPerformanceDisplay();
-  
+
   /** Attach a control for text entry, to override platform text entry */
   void AttachTextEntryControl();
   
