@@ -1,8 +1,8 @@
 #if defined IGRAPHICS_IMGUI
 
-#ifdef OS_WIN
 #include "IPlugPlatform.h"
 
+#ifdef OS_WIN
 #include "IGraphicsImGui.h"
 #include "IGraphicsNanoVG.h"
 
@@ -81,6 +81,8 @@ void ImGuiRenderer::EndFrame()
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 #endif
 }
+
+#include "imgui_impl_win32.cpp"
 
 #endif // OS_WIN
 

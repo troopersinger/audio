@@ -194,6 +194,10 @@ public:
    * This method is called after a text entry or popup menu prompt triggered by PromptUserInput(), calling SetDirty(true), which will mean that the new value gets sent back to the delegate
    * @param value the normalised value after user input via text entry or pop-up menu */
   virtual void SetValueFromUserInput(double value);
+    
+  /** Set the control's value to the default value of the control, or the parameter.
+   * This method should call through to SetDirty(true), which will mean that the new value gets sent back to the delegate */
+  virtual void SetValueToDefault();
   
   /** Get the control's value
    * @return Value of the control (normalized in the range 0-1) */
@@ -973,7 +977,7 @@ private:
 class ILambdaControl : public IControl
 {
 public:
-  ILambdaControl(IGEditorDelegate& dlg, IRECT bounds, IDrawFunction drawFunc, int animationDuration = DEFAULT_ANIMATION_DURATION,
+  ILambdaControl(IGEditorDelegate& dlg, IRECT bounds, ILambdaDrawFunction drawFunc, int animationDuration = DEFAULT_ANIMATION_DURATION,
     bool loopAnimation = false, bool startImmediately = false, int paramIdx = kNoParameter)
   : IControl(dlg, bounds, paramIdx, DefaultClickActionFunc)
   , mDrawFunc(drawFunc)
@@ -990,7 +994,7 @@ public:
   void Draw(IGraphics& g) override
   {
     if(mDrawFunc)
-      mDrawFunc(this, g, mRECT, mMouseInfo, GetAnimationProgress());
+      mDrawFunc(this, g, mRECT);
   }
   
   virtual void OnEndAnimation() override // if you override this you must call the base implementation, to free mAnimationFunc
@@ -1014,8 +1018,12 @@ public:
   void OnMouseDrag(float x, float y, float dX, float dY, const IMouseMod& mod) override { mMouseInfo.x = x; mMouseInfo.y = y; mMouseInfo.ms = mod; }
   void OnMouseDblClick(float x, float y, const IMouseMod& mod) override { mMouseInfo.x = x; mMouseInfo.y = y; mMouseInfo.ms = mod; }
   
+  IMouseInfo GetMouseInfo() const { return mMouseInfo; }
+//  ILayerPtr GetLayer() const { return mLayer; }
+
 private:
-  IDrawFunction mDrawFunc = nullptr;
+  ILayerPtr mLayer;
+  ILambdaDrawFunction mDrawFunc = nullptr;
   IMouseInfo mMouseInfo;
   bool mLoopAnimation;
   int mAnimationDuration;
@@ -1110,6 +1118,7 @@ public:
   void Draw(IGraphics& g) override;
 
   virtual void SetStr(const char* str);
+  virtual void SetStrFmt(int maxlen, const char* fmt, ...);
   virtual void ClearStr() { SetStr(""); }
   
 protected:
