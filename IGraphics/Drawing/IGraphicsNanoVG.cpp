@@ -428,14 +428,11 @@ void IGraphicsNanoVG::OnViewInitialized(void* pContext)
 //  glfwSetKeyCallback(gWindow, key);
   glfwMakeContextCurrent(gWindow);
 #endif // OS_WEB
- 
-  int flags = NVG_ANTIALIAS | NVG_STENCIL_STROKES;
   
 #if defined IGRAPHICS_METAL
-  flags |= NVG_TRIPLE_BUFFER; // Metal should be triple buffered
-  mVG = nvgCreateContext(pContext, flags);
+  mVG = nvgCreateContext(pContext, NVG_ANTIALIAS | NVG_TRIPLE_BUFFER);
 #else
-  mVG = nvgCreateContext(flags);
+  mVG = nvgCreateContext(NVG_ANTIALIAS | NVG_STENCIL_STROKES);
 #endif
   
   if (mVG == nullptr)
