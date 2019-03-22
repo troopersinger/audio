@@ -466,8 +466,17 @@ inline int GetMouseOver(IGraphicsMac* pGraphics)
     [pWindow makeFirstResponder: self];
     [pWindow setAcceptsMouseMovedEvents: YES];
     
+    CGFloat newScale = [pWindow backingScaleFactor];
+
     if (mGraphics)
-      mGraphics->SetScreenScale([pWindow backingScaleFactor]);
+      mGraphics->SetScreenScale(newScale);
+    
+    #ifdef IGRAPHICS_METAL
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(frameDidChange:)
+                                                 name:NSViewFrameDidChangeNotification
+                                               object:self];
+    #endif
     
 //    [[NSNotificationCenter defaultCenter] addObserver:self
 //                                             selector:@selector(windowResized:) name:NSWindowDidEndLiveResizeNotification
@@ -494,6 +503,11 @@ inline int GetMouseOver(IGraphicsMac* pGraphics)
   
   if (newScale != mGraphics->GetScreenScale())
     mGraphics->SetScreenScale(newScale);
+  
+#ifdef IGRAPHICS_METAL
+  [(CAMetalLayer*)[self layer] setDrawableSize:CGSizeMake(self.frame.size.width * newScale,
+                                                          self.frame.size.height * newScale)];
+#endif
 }
 
 - (CGContextRef) getCGContextRef
@@ -1064,6 +1078,16 @@ static void MakeCursorFromName(NSCursor*& cursor, const char *name)
 
   return YES;
 }
+
+#ifdef IGRAPHICS_METAL
+- (void)frameDidChange:(NSNotification*)notification
+{
+  CGFloat scale = [[self window] backingScaleFactor];
+
+  [(CAMetalLayer*)[self layer] setDrawableSize:CGSizeMake(self.frame.size.width * scale,
+                                                          self.frame.size.height * scale)];
+}
+#endif
 
 //- (void)windowResized:(NSNotification *)notification;
 //{
